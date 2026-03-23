@@ -11,9 +11,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants';
+import { Colors, Spacing, BorderRadius } from '../../constants';
 import AuthInput from '../../components/common/AuthInput';
-// import LogoPlaceholder from '../../components/common/LogoPlaceholder';
 
 export default function ForgotPasswordScreen() {
   const insets = useSafeAreaInsets();
@@ -24,14 +23,8 @@ export default function ForgotPasswordScreen() {
   const [sent, setSent] = useState(false);
 
   const handleSubmit = () => {
-    if (!email.trim()) {
-      setError('Email is required');
-      return;
-    }
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      setError('Enter a valid email');
-      return;
-    }
+    if (!email.trim()) { setError('Email is required'); return; }
+    if (!/\S+@\S+\.\S+/.test(email)) { setError('Enter a valid email'); return; }
     setError('');
     setSent(true);
   };
@@ -44,37 +37,34 @@ export default function ForgotPasswordScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.container,
-          { paddingTop: insets.top + Spacing['2xl'], paddingBottom: insets.bottom + Spacing.xl },
+          { paddingTop: insets.top + Spacing['3xl'], paddingBottom: insets.bottom + Spacing.xl },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Logo — replace with <Image> when asset is provided */}
-        {/* <Image source={require('../../assets/logo.png')} style={styles.logo} /> */}
-
         {sent ? (
           <View style={styles.sentContainer}>
-            <View style={styles.sentIcon}>
-              <Ionicons name="mail-open-outline" size={48} color={Colors.accent} />
-            </View>
-            <Text style={styles.title}>Check Your Email</Text>
+            <Ionicons name="checkmark-circle" size={56} color="#059669" />
+            <Text style={styles.sentTitle}>Check Your Email</Text>
             <Text style={styles.sentEmail}>{email}</Text>
             <TouchableOpacity
               style={styles.button}
               onPress={() => navigation.goBack()}
               activeOpacity={0.8}
             >
-              <Text style={styles.buttonText}>Back to Login</Text>
+              <Text style={styles.buttonText}>Back to Sign In</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <>
             <Text style={styles.title}>Reset Password</Text>
+            <Text style={styles.subtitle}>
+              Enter your email and we'll send you a reset link.
+            </Text>
 
             <View style={styles.form}>
               <AuthInput
                 label="Email"
-                icon="mail-outline"
                 placeholder="Enter your email"
                 value={email}
                 onChangeText={setEmail}
@@ -90,14 +80,14 @@ export default function ForgotPasswordScreen() {
               onPress={handleSubmit}
               activeOpacity={0.8}
             >
-              <Text style={styles.buttonText}>Send Reset Link</Text>
+              <Text style={styles.buttonText}>Continue</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.backLink}
               onPress={() => navigation.goBack()}
             >
-              <Text style={styles.backLinkText}>Back to Login</Text>
+              <Text style={styles.backLinkText}>Back to Sign In</Text>
             </TouchableOpacity>
           </>
         )}
@@ -116,48 +106,54 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
   },
   title: {
-    ...Typography.h2,
-    textAlign: 'center',
-    marginTop: Spacing.xl,
-    marginBottom: Spacing['2xl'],
+    fontSize: 28,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
+  },
+  subtitle: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    lineHeight: 22,
+    marginBottom: Spacing['3xl'],
   },
   form: {
     marginBottom: Spacing.xl,
   },
   button: {
     backgroundColor: Colors.accent,
-    paddingVertical: Spacing.base,
+    paddingVertical: 16,
     borderRadius: BorderRadius.lg,
     alignItems: 'center',
   },
   buttonText: {
-    ...Typography.button,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   backLink: {
     alignSelf: 'center',
-    marginTop: Spacing.lg,
+    marginTop: Spacing.xl,
   },
   backLinkText: {
-    ...Typography.bodyMedium,
-    fontSize: 13,
+    fontSize: 14,
+    fontWeight: '600',
     color: Colors.accent,
   },
   sentContainer: {
     alignItems: 'center',
-    marginTop: Spacing.xl,
+    paddingTop: Spacing['5xl'],
+    gap: Spacing.md,
   },
-  sentIcon: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: Colors.surfaceBlue,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.lg,
+  sentTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.textPrimary,
   },
   sentEmail: {
-    ...Typography.bodyMedium,
-    color: Colors.textPrimary,
-    marginBottom: Spacing['2xl'],
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    marginBottom: Spacing.xl,
   },
 });

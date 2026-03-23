@@ -26,10 +26,6 @@ export default function ProfileScreen() {
   const navigation = useNavigation();
   const { user, logout } = useAuthStore();
 
-  const initials = user?.name
-    ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
-    : 'G';
-
   const generalItems: MenuItem[] = [
     {
       icon: 'notifications-outline',
@@ -165,20 +161,6 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     paddingBottom: Spacing['2xl'],
-  },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  avatarText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
   },
   userName: {
     ...Typography.h3,

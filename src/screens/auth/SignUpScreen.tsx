@@ -11,12 +11,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants';
+import { Colors, Spacing, BorderRadius } from '../../constants';
 import { useAuthStore } from '../../store/authStore';
 import { AuthStackParamList } from '../../types';
 import AuthInput from '../../components/common/AuthInput';
-import GoogleButton from '../../components/common/GoogleButton';
-import OrDivider from '../../components/common/OrDivider';
 
 type SignUpNavProp = NativeStackNavigationProp<AuthStackParamList, 'SignUp'>;
 
@@ -42,9 +40,7 @@ export default function SignUpScreen() {
   };
 
   const handleSignUp = () => {
-    if (validate()) {
-      signup(name, email, password);
-    }
+    if (validate()) signup(name, email, password);
   };
 
   return (
@@ -55,21 +51,16 @@ export default function SignUpScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.container,
-          { paddingTop: insets.top + Spacing['2xl'], paddingBottom: insets.bottom + Spacing.xl },
+          { paddingTop: insets.top + Spacing['3xl'], paddingBottom: insets.bottom + Spacing.xl },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Logo — replace with <Image> when asset is provided */}
-        {/* <Image source={require('../../assets/logo.png')} style={styles.logo} /> */}
-
         <Text style={styles.title}>Create Account</Text>
 
-        {/* Form */}
         <View style={styles.form}>
           <AuthInput
             label="Full Name"
-            icon="person-outline"
             placeholder="Enter your name"
             value={name}
             onChangeText={setName}
@@ -78,7 +69,6 @@ export default function SignUpScreen() {
           />
           <AuthInput
             label="Email"
-            icon="mail-outline"
             placeholder="Enter your email"
             value={email}
             onChangeText={setEmail}
@@ -89,7 +79,6 @@ export default function SignUpScreen() {
           />
           <AuthInput
             label="Password"
-            icon="lock-closed-outline"
             placeholder="Create a password"
             value={password}
             onChangeText={setPassword}
@@ -98,26 +87,14 @@ export default function SignUpScreen() {
           />
         </View>
 
-        {/* Sign Up Button */}
         <TouchableOpacity
           style={styles.button}
           onPress={handleSignUp}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>Create Account</Text>
+          <Text style={styles.buttonText}>Continue</Text>
         </TouchableOpacity>
 
-        <OrDivider />
-
-        {/* Google Sign In */}
-        <GoogleButton
-          onPress={() => {
-            // TODO: wire up Google sign-in
-            signup('Google User', 'google@example.com', '');
-          }}
-        />
-
-        {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>Already have an account? </Text>
           <TouchableOpacity onPress={() => navigation.navigate('Login')}>
@@ -139,37 +116,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
   },
   title: {
-    ...Typography.h2,
-    textAlign: 'center',
-    marginTop: Spacing.xl,
-    marginBottom: Spacing['2xl'],
+    fontSize: 28,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: Spacing['3xl'],
   },
   form: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.xl,
   },
   button: {
     backgroundColor: Colors.accent,
-    paddingVertical: Spacing.base,
+    paddingVertical: 16,
     borderRadius: BorderRadius.lg,
     alignItems: 'center',
-    marginBottom: 0,
+    marginBottom: Spacing['2xl'],
   },
   buttonText: {
-    ...Typography.button,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   footer: {
-    marginTop: Spacing.xl,
     flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'center',
   },
   footerText: {
-    ...Typography.bodySmall,
+    fontSize: 14,
     color: Colors.textSecondary,
   },
   footerLink: {
-    ...Typography.bodyMedium,
-    fontSize: 13,
+    fontSize: 14,
+    fontWeight: '600',
     color: Colors.accent,
   },
 });

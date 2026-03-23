@@ -26,15 +26,6 @@ export interface Sermon {
   contentType: ContentType;
 }
 
-export interface Series {
-  id: string;
-  title: string;
-  description: string;
-  thumbnailUrl: string;
-  sermonCount: number;
-  tag?: string; // e.g. "New", "Popular"
-}
-
 export interface QAItem {
   id: string;
   question: string;

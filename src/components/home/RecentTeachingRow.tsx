@@ -4,6 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from '../../constants';
 import { Sermon } from '../../types/content';
 
+const TYPE_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
+  video: 'videocam',
+  audio: 'headset',
+  reading: 'book',
+};
+
 interface RecentTeachingRowProps {
   sermon: Sermon;
   onPress?: () => void;
@@ -22,11 +28,18 @@ export default function RecentTeachingRow({ sermon, onPress }: RecentTeachingRow
         <Text style={styles.title} numberOfLines={2}>
           {sermon.title}
         </Text>
-        <Text style={styles.meta}>
-          {sermon.scripture} · {sermon.duration}
-        </Text>
+        <View style={styles.metaRow}>
+          <Ionicons
+            name={TYPE_ICON[sermon.contentType] || 'document-outline'}
+            size={12}
+            color={Colors.textSecondary}
+          />
+          <Text style={styles.meta}>
+            {sermon.scripture} · {sermon.duration}
+          </Text>
+        </View>
       </View>
-      <Ionicons name="ellipsis-vertical" size={18} color={Colors.textSecondary} />
+      <Ionicons name="chevron-forward" size={18} color={Colors.textSecondary} />
     </TouchableOpacity>
   );
 }
@@ -64,8 +77,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
   meta: {
     ...Typography.caption,
-    marginTop: 2,
   },
 });

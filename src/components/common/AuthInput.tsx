@@ -13,14 +13,12 @@ import { Colors, Typography, Spacing, BorderRadius } from '../../constants';
 interface AuthInputProps extends TextInputProps {
   label: string;
   error?: string;
-  icon?: keyof typeof Ionicons.glyphMap;
   isPassword?: boolean;
 }
 
 export default function AuthInput({
   label,
   error,
-  icon,
   isPassword,
   ...rest
 }: AuthInputProps) {
@@ -37,17 +35,9 @@ export default function AuthInput({
           error ? styles.inputError : undefined,
         ]}
       >
-        {icon && (
-          <Ionicons
-            name={icon}
-            size={20}
-            color={focused ? Colors.accent : Colors.textSecondary}
-            style={styles.icon}
-          />
-        )}
         <TextInput
           style={styles.input}
-          placeholderTextColor={Colors.textSecondary}
+          placeholderTextColor="#A0AEC0"
           secureTextEntry={isPassword && !showPassword}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
@@ -62,7 +52,7 @@ export default function AuthInput({
             <Ionicons
               name={showPassword ? 'eye-off-outline' : 'eye-outline'}
               size={20}
-              color={Colors.textSecondary}
+              color="#A0AEC0"
             />
           </TouchableOpacity>
         )}
@@ -74,42 +64,39 @@ export default function AuthInput({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: Spacing.base,
+    marginBottom: Spacing.lg,
   },
   label: {
-    ...Typography.bodyMedium,
-    fontSize: 13,
+    fontSize: 14,
+    fontWeight: '600',
     color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.sm,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: BorderRadius.md,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    paddingHorizontal: Spacing.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: Spacing.base,
     height: 52,
   },
   inputFocused: {
     borderColor: Colors.accent,
-    backgroundColor: Colors.background,
+    borderWidth: 2,
   },
   inputError: {
     borderColor: Colors.error,
   },
-  icon: {
-    marginRight: Spacing.sm,
-  },
   input: {
     flex: 1,
-    ...Typography.body,
+    fontSize: 16,
     color: Colors.textPrimary,
     height: '100%',
   },
   errorText: {
-    ...Typography.caption,
+    fontSize: 12,
     color: Colors.error,
     marginTop: Spacing.xs,
   },

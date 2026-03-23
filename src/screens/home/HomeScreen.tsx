@@ -19,7 +19,6 @@ import { RootStackParamList } from '../../types';
 import { Sermon } from '../../types/content';
 
 import DevotionCard from '../../components/home/DevotionCard';
-// import QuickAccess from '../../components/home/QuickAccess';
 import SectionHeader from '../../components/common/SectionHeader';
 import ContentCard from '../../components/common/ContentCard';
 import RecentTeachingRow from '../../components/home/RecentTeachingRow';
@@ -87,7 +86,7 @@ export default function HomeScreen() {
       <DevotionCard devotion={todaysDevotion} />
 
       {/* ── Recent Teachings (horizontal cards) ── */}
-      <SectionHeader title="Recent Teachings" onSeeAll={() => {}} />
+      <SectionHeader title="Recent Teachings"  />
       <FlatList
         data={sermons.slice(0, 5)}
         keyExtractor={(item) => item.id}
@@ -107,7 +106,7 @@ export default function HomeScreen() {
       />
 
       {/* ── Latest Motivations ── */}
-      <SectionHeader title="Motivation" onSeeAll={() => {}} />
+      <SectionHeader title="Motivation"  />
       {motivations.slice(0, 2).map((item) => (
         <RecentTeachingRow key={item.id} sermon={item} onPress={() => handleItemPress(item)} />
       ))}
