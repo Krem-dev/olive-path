@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -57,6 +58,15 @@ export default function ForgotPasswordScreen() {
           </View>
         ) : (
           <>
+            {/* Logo */}
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('../../../assets/logo.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </View>
+
             <Text style={styles.title}>Reset Password</Text>
             <Text style={styles.subtitle}>
               Enter your email and we'll send you a reset link.
@@ -105,6 +115,14 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: Spacing.xl,
   },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: Spacing['3xl'],
+  },
+  logo: {
+    width: 180,
+    height: 100,
+  },
   title: {
     fontSize: 28,
     fontWeight: '700',
@@ -121,7 +139,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   button: {
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.primary,
     paddingVertical: 16,
     borderRadius: BorderRadius.lg,
     alignItems: 'center',

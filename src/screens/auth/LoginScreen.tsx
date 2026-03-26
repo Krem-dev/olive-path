@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -48,12 +49,19 @@ export default function LoginScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.container,
-          { paddingTop: insets.top + Spacing['3xl'], paddingBottom: insets.bottom + Spacing.xl },
+          { paddingTop: insets.top + Spacing['2xl'], paddingBottom: insets.bottom + Spacing.xl },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Sign In</Text>
+        {/* Logo */}
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('../../../assets/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
 
         <View style={styles.form}>
           <AuthInput
@@ -88,7 +96,7 @@ export default function LoginScreen() {
           onPress={handleLogin}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>Continue</Text>
+          <Text style={styles.buttonText}>Login</Text>
         </TouchableOpacity>
 
         <View style={styles.footer}>
@@ -111,11 +119,13 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: Spacing.xl,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.textPrimary,
+  logoContainer: {
+    alignItems: 'center',
     marginBottom: Spacing['3xl'],
+  },
+  logo: {
+    width: 180,
+    height: 100,
   },
   form: {
     marginBottom: Spacing.sm,
@@ -130,7 +140,7 @@ const styles = StyleSheet.create({
     color: Colors.accent,
   },
   button: {
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.primary,
     paddingVertical: 16,
     borderRadius: BorderRadius.lg,
     alignItems: 'center',
