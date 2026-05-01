@@ -2,20 +2,22 @@ import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Shadows } from '../../constants';
 import { useAuthStore } from '../../store/authStore';
 import { AuthStackParamList } from '../../types';
 import AuthInput from '../../components/common/AuthInput';
+import { ApiError } from '../../api/client';
 
 type SignUpNavProp = NativeStackNavigationProp<AuthStackParamList, 'SignUp'>;
 
@@ -30,47 +32,64 @@ export default function SignUpScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const validateField = useCallback((field: string, value: string, allValues?: Record<string, string>) => {
-    const pw = allValues?.password ?? password;
-
-    switch (field) {
-      case 'name':
-        if (!value.trim()) return 'Name is required';
-        if (value.trim().length < 2) return 'At least 2 characters';
-        return '';
-      case 'email':
-        if (!value.trim()) return 'Email is required';
-        if (!/\S+@\S+\.\S+/.test(value)) return 'Enter a valid email';
-        return '';
-      case 'password':
-        if (!value) return 'Password is required';
-        if (value.length < 6) return 'Minimum 6 characters';
-        return '';
-      case 'confirmPassword':
-        if (!value) return 'Please confirm your password';
-        if (value !== pw) return 'Passwords do not match';
-        return '';
-      default:
-        return '';
-    }
-  }, [password]);
+  const validateField = useCallback(
+    (field: string, value: string, allValues?: Record<string, string>) => {
+      const pw = allValues?.password ?? password;
+      switch (field) {
+        case 'name':
+          if (!value.trim()) return 'Name is required';
+          if (value.trim().length < 2) return 'At least 2 characters';
+          return '';
+        case 'email':
+          if (!value.trim()) return 'Email is required';
+          if (!/\S+@\S+\.\S+/.test(value)) return 'Enter a valid email';
+          return '';
+        case 'password':
+          if (!value) return 'Password is required';
+          if (value.length < 6) return 'Minimum 6 characters';
+          return '';
+        case 'confirmPassword':
+          if (!value) return 'Please confirm your password';
+          if (value !== pw) return 'Passwords do not match';
+          return '';
+        default:
+          return '';
+      }
+    },
+    [password],
+  );
 
   const handleChange = (field: string, value: string) => {
     switch (field) {
-      case 'name': setName(value); break;
-      case 'email': setEmail(value); break;
-      case 'password': setPassword(value); break;
-      case 'confirmPassword': setConfirmPassword(value); break;
+      case 'name':
+        setName(value);
+        break;
+      case 'email':
+        setEmail(value);
+        break;
+      case 'password':
+        setPassword(value);
+        break;
+      case 'confirmPassword':
+        setConfirmPassword(value);
+        break;
     }
-
     if (touched[field]) {
-      const error = validateField(field, value, { password: field === 'password' ? value : password, confirmPassword: field === 'confirmPassword' ? value : confirmPassword });
+      const error = validateField(field, value, {
+        password: field === 'password' ? value : password,
+        confirmPassword:
+          field === 'confirmPassword' ? value : confirmPassword,
+      });
       setErrors((prev) => ({ ...prev, [field]: error }));
-
       if (field === 'password' && touched.confirmPassword && confirmPassword) {
-        const cpError = confirmPassword !== value ? 'Passwords do not match' : '';
-        setErrors((prev) => ({ ...prev, confirmPassword: cpError }));
+        setErrors((prev) => ({
+          ...prev,
+          confirmPassword:
+            confirmPassword !== value ? 'Passwords do not match' : '',
+        }));
       }
     }
   };
@@ -78,13 +97,16 @@ export default function SignUpScreen() {
   const handleBlur = (field: string) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
     const value = { name, email, password, confirmPassword }[field] || '';
-    const error = validateField(field, value);
-    setErrors((prev) => ({ ...prev, [field]: error }));
+    setErrors((prev) => ({ ...prev, [field]: validateField(field, value) }));
   };
 
-  const handleSignUp = () => {
-    setTouched({ name: true, email: true, password: true, confirmPassword: true });
-
+  const handleSignUp = async () => {
+    setTouched({
+      name: true,
+      email: true,
+      password: true,
+      confirmPassword: true,
+    });
     const newErrors: Record<string, string> = {
       name: validateField('name', name),
       email: validateField('email', email),
@@ -92,9 +114,21 @@ export default function SignUpScreen() {
       confirmPassword: validateField('confirmPassword', confirmPassword),
     };
     setErrors(newErrors);
+    if (Object.values(newErrors).some((e) => e !== '')) return;
 
-    const hasErrors = Object.values(newErrors).some((e) => e !== '');
-    if (!hasErrors) signup(name, email, password);
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      await signup(name, email, password);
+    } catch (e) {
+      const msg =
+        e instanceof ApiError
+          ? e.message
+          : 'Could not create account. Try again.';
+      setSubmitError(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -102,37 +136,46 @@ export default function SignUpScreen() {
       style={styles.screen}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      {/* ── Top bar ── */}
+      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+          style={styles.backBtn}
+          hitSlop={8}
+        >
+          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         contentContainerStyle={[
           styles.container,
-          { paddingTop: insets.top + Spacing.xl, paddingBottom: insets.bottom + Spacing.xl },
+          { paddingBottom: insets.bottom + Spacing.xl },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Logo */}
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../../../assets/logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+        {/* ── Header ── */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Create account</Text>
         </View>
 
-        {/* Form */}
+        {/* ── Form ── */}
         <View style={styles.form}>
           <AuthInput
-            label="Full Name"
-            placeholder="Enter your name"
+            label="Full name"
+            placeholder="Your name"
             value={name}
             onChangeText={(v) => handleChange('name', v)}
             onBlur={() => handleBlur('name')}
             error={errors.name}
             autoComplete="name"
+            leftIcon="person-outline"
           />
           <AuthInput
             label="Email"
-            placeholder="Enter your email"
+            placeholder="you@example.com"
             value={email}
             onChangeText={(v) => handleChange('email', v)}
             onBlur={() => handleBlur('email')}
@@ -140,39 +183,65 @@ export default function SignUpScreen() {
             keyboardType="email-address"
             autoComplete="email"
             autoCapitalize="none"
+            leftIcon="mail-outline"
           />
           <AuthInput
             label="Password"
-            placeholder="Create a password"
+            placeholder="At least 6 characters"
             value={password}
             onChangeText={(v) => handleChange('password', v)}
             onBlur={() => handleBlur('password')}
             error={errors.password}
             isPassword
+            leftIcon="lock-closed-outline"
           />
           <AuthInput
-            label="Confirm Password"
-            placeholder="Re-enter your password"
+            label="Confirm password"
+            placeholder="Re-enter password"
             value={confirmPassword}
             onChangeText={(v) => handleChange('confirmPassword', v)}
             onBlur={() => handleBlur('confirmPassword')}
             error={errors.confirmPassword}
             isPassword
+            leftIcon="lock-closed-outline"
           />
+
+          {submitError && (
+            <View style={styles.errorBanner}>
+              <Ionicons name="alert-circle" size={14} color={Colors.error} />
+              <Text style={styles.errorBannerText}>{submitError}</Text>
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={[styles.primaryButton, submitting && styles.buttonDisabled]}
+            onPress={handleSignUp}
+            activeOpacity={0.85}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator size="small" color={Colors.textInverse} />
+            ) : (
+              <>
+                <Text style={styles.primaryButtonText}>Create Account</Text>
+                <Ionicons
+                  name="arrow-forward"
+                  size={18}
+                  color={Colors.textInverse}
+                />
+              </>
+            )}
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleSignUp}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.buttonText}>Create Account</Text>
-        </TouchableOpacity>
-
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.footerLink}>Log In</Text>
+          <Text style={styles.footerText}>Already have an account?</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Login')}
+            activeOpacity={0.7}
+            hitSlop={6}
+          >
+            <Text style={styles.footerLink}>Sign In</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -185,46 +254,105 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+
+  // ── Top bar ──
+  topBar: {
+    paddingHorizontal: Spacing.base,
+    paddingBottom: Spacing.sm,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+
+  // ── Container ──
   container: {
     flexGrow: 1,
-    paddingHorizontal: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
   },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
-    marginTop: Spacing.md,
+
+  // ── Header ──
+  header: {
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
   },
-  logo: {
-    width: 120,
-    height: 60,
-  },
-  form: {
-    marginBottom: Spacing.md,
-  },
-  button: {
-    backgroundColor: Colors.accent,
-    paddingVertical: 16,
-    borderRadius: BorderRadius.full,
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
-    ...Shadows.md,
-  },
-  buttonText: {
-    fontSize: 16,
+  title: {
+    fontFamily: 'serif',
+    fontSize: 32,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.textPrimary,
+    letterSpacing: -0.6,
+    lineHeight: 38,
   },
+
+  // ── Form ──
+  form: {
+    gap: 0,
+  },
+
+  // ── Buttons ──
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.primary,
+    paddingVertical: 16,
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.sm,
+    ...Shadows.sm,
+  },
+  primaryButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textInverse,
+    letterSpacing: 0.1,
+  },
+  buttonDisabled: {
+    opacity: 0.65,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.errorLight,
+    borderWidth: 1,
+    borderColor: 'rgba(196, 69, 54, 0.3)',
+    borderRadius: BorderRadius.md,
+    padding: 12,
+    marginBottom: Spacing.sm,
+  },
+  errorBannerText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.error,
+    lineHeight: 18,
+  },
+
+  // ── Footer ──
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: Spacing['2xl'],
+    paddingTop: Spacing.lg,
   },
   footerText: {
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.textSecondary,
+    fontWeight: '500',
   },
   footerLink: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: Colors.accent,
   },
 });

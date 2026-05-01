@@ -8,18 +8,20 @@ import {
   TextInputProps,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, Shadows } from '../../constants';
+import { Colors, Spacing, BorderRadius } from '../../constants';
 
 interface AuthInputProps extends TextInputProps {
   label: string;
   error?: string;
   isPassword?: boolean;
+  leftIcon?: React.ComponentProps<typeof Ionicons>['name'];
 }
 
 export default function AuthInput({
   label,
   error,
   isPassword,
+  leftIcon,
   onBlur: onBlurProp,
   ...rest
 }: AuthInputProps) {
@@ -32,13 +34,21 @@ export default function AuthInput({
       <View
         style={[
           styles.inputContainer,
-          focused && styles.inputFocused,
+          focused && !error ? styles.inputFocused : undefined,
           error ? styles.inputError : undefined,
         ]}
       >
+        {leftIcon && (
+          <Ionicons
+            name={leftIcon}
+            size={18}
+            color={focused ? Colors.accent : Colors.textSecondary}
+            style={styles.leftIcon}
+          />
+        )}
         <TextInput
           style={styles.input}
-          placeholderTextColor="#A0AEC0"
+          placeholderTextColor={Colors.textSecondary}
           secureTextEntry={isPassword && !showPassword}
           onFocus={() => setFocused(true)}
           onBlur={(e) => {
@@ -55,8 +65,8 @@ export default function AuthInput({
           >
             <Ionicons
               name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-              size={20}
-              color="#A0AEC0"
+              size={19}
+              color={Colors.textSecondary}
             />
           </TouchableOpacity>
         )}
@@ -68,40 +78,49 @@ export default function AuthInput({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.base,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
+    marginBottom: 8,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.base,
-    height: 54,
-    ...Shadows.sm,
+    height: 52,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   inputFocused: {
-    borderWidth: 2,
     borderColor: Colors.accent,
+    borderWidth: 1.5,
   },
   inputError: {
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.error,
+  },
+  leftIcon: {
+    marginRight: Spacing.sm,
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     color: Colors.textPrimary,
     height: '100%',
+    fontWeight: '500',
   },
   errorText: {
     fontSize: 12,
+    fontWeight: '500',
     color: Colors.error,
-    marginTop: Spacing.xs,
+    marginTop: 6,
+    marginLeft: 2,
   },
 });

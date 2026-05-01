@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,31 +8,66 @@ import {
   StyleSheet,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants';
-import { sermons, motivations } from '../../data/mockData';
+import { Colors, Spacing, BorderRadius, Shadows } from '../../constants';
+import { sermonsApi } from '../../api/sermons';
 import { Sermon } from '../../types/content';
 import { RootStackParamList } from '../../types';
 
 type CategoryFilter = 'all' | 'preaching' | 'motivation';
-type TypeFilter = 'all' | 'video' | 'audio' | 'reading';
+type FormatFilter = 'all' | 'video' | 'audio' | 'reading';
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
-const CATEGORY_FILTERS: { key: CategoryFilter; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'preaching', label: 'Preaching' },
-  { key: 'motivation', label: 'Motivation' },
-];
+const PAGE_SIZE = 10;
 
-const TYPE_FILTERS: { key: TypeFilter; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: 'all', label: 'All Types', icon: 'apps-outline' },
+const FORMAT_FILTERS: {
+  key: FormatFilter;
+  label: string;
+  icon: IoniconName;
+}[] = [
+  { key: 'all', label: 'All formats', icon: 'apps-outline' },
   { key: 'video', label: 'Video', icon: 'videocam-outline' },
   { key: 'audio', label: 'Audio', icon: 'headset-outline' },
   { key: 'reading', label: 'Reading', icon: 'book-outline' },
 ];
+
+const CATEGORY_FILTERS: {
+  key: CategoryFilter;
+  label: string;
+  emptyTitle: string;
+  emptySub: string;
+}[] = [
+  {
+    key: 'all',
+    label: 'All',
+    emptyTitle: 'Nothing here yet',
+    emptySub: 'New teachings will appear here as they\'re shared.',
+  },
+  {
+    key: 'preaching',
+    label: 'Preaching',
+    emptyTitle: 'No sermons match',
+    emptySub: 'Try a different search or clear filters.',
+  },
+  {
+    key: 'motivation',
+    label: 'Motivation',
+    emptyTitle: 'No motivation match',
+    emptySub: 'Try a different search or clear filters.',
+  },
+];
+
+const TYPE_ICON: Record<string, IoniconName> = {
+  video: 'videocam',
+  audio: 'headset',
+  reading: 'book',
+};
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -40,39 +75,97 @@ export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const [formatFilter, setFormatFilter] = useState<FormatFilter>('all');
+
+  const [items, setItems] = useState<Sermon[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const onRefresh = () => {
+  // Debounce search input by 300ms so we don't fire on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const loadPage = useCallback(
+    async (
+      reset: boolean,
+      opts: {
+        category: CategoryFilter;
+        format: FormatFilter;
+        searchTerm: string;
+        targetPage: number;
+      },
+    ) => {
+      try {
+        const env = await sermonsApi.list({
+          category: opts.category === 'all' ? undefined : opts.category,
+          contentType: opts.format === 'all' ? undefined : opts.format,
+          search: opts.searchTerm || undefined,
+          page: opts.targetPage,
+          limit: PAGE_SIZE,
+        });
+        setItems((prev) => (reset ? env.data : [...prev, ...env.data]));
+        setTotal(env.pagination?.total ?? env.data.length);
+        setPage(opts.targetPage);
+        setError(null);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load teachings');
+      }
+    },
+    [],
+  );
+
+  // Reset to page 1 whenever filters or search change
+  useEffect(() => {
+    setLoading(true);
+    void loadPage(true, {
+      category: categoryFilter,
+      format: formatFilter,
+      searchTerm: debouncedSearch,
+      targetPage: 1,
+    }).finally(() => setLoading(false));
+  }, [categoryFilter, formatFilter, debouncedSearch, loadPage]);
+
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200);
-  };
+    await loadPage(true, {
+      category: categoryFilter,
+      format: formatFilter,
+      searchTerm: debouncedSearch,
+      targetPage: 1,
+    });
+    setRefreshing(false);
+  }, [loadPage, categoryFilter, formatFilter, debouncedSearch]);
 
-  const allContent = useMemo(() => [...sermons, ...motivations], []);
+  const hasMore = items.length < total;
 
-  const filtered = useMemo(() => {
-    let items = allContent;
-
-    if (categoryFilter !== 'all') {
-      items = items.filter((i) => i.category === categoryFilter);
-    }
-
-    if (typeFilter !== 'all') {
-      items = items.filter((i) => i.contentType === typeFilter);
-    }
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      items = items.filter(
-        (i) =>
-          i.title.toLowerCase().includes(q) ||
-          i.scripture.toLowerCase().includes(q)
-      );
-    }
-
-    return items;
-  }, [allContent, categoryFilter, typeFilter, search]);
+  const handleEndReached = useCallback(() => {
+    if (!hasMore || loadingMore || loading) return;
+    setLoadingMore(true);
+    void loadPage(false, {
+      category: categoryFilter,
+      format: formatFilter,
+      searchTerm: debouncedSearch,
+      targetPage: page + 1,
+    }).finally(() => setLoadingMore(false));
+  }, [
+    hasMore,
+    loadingMore,
+    loading,
+    loadPage,
+    categoryFilter,
+    formatFilter,
+    debouncedSearch,
+    page,
+  ]);
 
   const handleCardPress = (item: Sermon) => {
     if (item.category === 'preaching') {
@@ -82,59 +175,101 @@ export default function DiscoverScreen() {
     }
   };
 
-  const renderItem = ({ item }: { item: Sermon }) => {
+  const activeCategory = CATEGORY_FILTERS.find(
+    (c) => c.key === categoryFilter,
+  )!;
+
+  const renderItem = ({ item, index }: { item: Sermon; index: number }) => {
+    const isLeft = index % 2 === 0;
+    const typeIcon = TYPE_ICON[item.contentType];
     return (
-      <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => handleCardPress(item)}>
+      <TouchableOpacity
+        style={[styles.card, { marginRight: isLeft ? Spacing.md : 0 }]}
+        activeOpacity={0.88}
+        onPress={() => handleCardPress(item)}
+      >
         <View style={styles.thumbWrap}>
           <Image source={{ uri: item.thumbnailUrl }} style={styles.thumb} />
-          <View style={styles.durationBadge}>
-            <Text style={styles.durationText}>{item.duration}</Text>
+          <View style={styles.thumbOverlay} />
+          <View style={styles.thumbFooter}>
+            <View style={styles.typePill}>
+              <Ionicons name={typeIcon} size={10} color={Colors.textInverse} />
+              <Text style={styles.typePillText}>{item.duration}</Text>
+            </View>
           </View>
         </View>
-        <View style={styles.cardInfo}>
-          <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-          <Text style={styles.cardSub}>{item.scripture}</Text>
-        </View>
+        <Text style={styles.cardTitle} numberOfLines={2}>
+          {item.title}
+        </Text>
+        <Text style={styles.cardScripture} numberOfLines={1}>
+          {item.scripture}
+        </Text>
       </TouchableOpacity>
     );
   };
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <Text style={styles.headerTitle}>Discover</Text>
+      {/* ── Header ── */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Discover</Text>
+        <Text style={styles.subtitle}>
+          {total} {total === 1 ? 'teaching' : 'teachings'}
+          {categoryFilter !== 'all' ? ` in ${activeCategory.label.toLowerCase()}` : ''}
+        </Text>
+      </View>
 
-      {/* Search */}
-      <View style={styles.searchBar}>
-        <Ionicons name="search-outline" size={18} color={Colors.textSecondary} />
+      {/* ── Search ── */}
+      <View
+        style={[
+          styles.searchBar,
+          searchFocused && styles.searchBarFocused,
+        ]}
+      >
+        <Ionicons
+          name="search-outline"
+          size={18}
+          color={searchFocused ? Colors.accent : Colors.textSecondary}
+        />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search teachings..."
+          placeholder="Search teachings or scripture"
           placeholderTextColor={Colors.textSecondary}
           value={search}
           onChangeText={setSearch}
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setSearchFocused(false)}
           autoCapitalize="none"
           autoCorrect={false}
         />
         {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={18} color={Colors.textSecondary} />
+          <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
+            <Ionicons
+              name="close-circle"
+              size={18}
+              color={Colors.textSecondary}
+            />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Category Filters */}
-      <View style={styles.filterRow}>
+      {/* ── Segmented control (Category) ── */}
+      <View style={styles.segmented}>
         {CATEGORY_FILTERS.map((f) => {
           const active = categoryFilter === f.key;
           return (
             <TouchableOpacity
               key={f.key}
-              style={[styles.chip, active && styles.chipActive]}
+              style={[styles.segment, active && styles.segmentActive]}
               onPress={() => setCategoryFilter(f.key)}
-              activeOpacity={0.7}
+              activeOpacity={0.85}
             >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>
+              <Text
+                style={[
+                  styles.segmentText,
+                  active && styles.segmentTextActive,
+                ]}
+              >
                 {f.label}
               </Text>
             </TouchableOpacity>
@@ -142,47 +277,131 @@ export default function DiscoverScreen() {
         })}
       </View>
 
-      {/* Type Filters */}
-      <View style={styles.typeRow}>
-        {TYPE_FILTERS.map((f) => {
-          const active = typeFilter === f.key;
+      {/* ── Format pills (secondary) ── */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.formatScroll}
+        contentContainerStyle={styles.formatRow}
+      >
+        {FORMAT_FILTERS.map((item) => {
+          const active = formatFilter === item.key;
           return (
             <TouchableOpacity
-              key={f.key}
-              style={[styles.typeChip, active && styles.typeChipActive]}
-              onPress={() => setTypeFilter(f.key)}
-              activeOpacity={0.7}
+              key={item.key}
+              style={[
+                styles.formatPill,
+                active && styles.formatPillActive,
+              ]}
+              onPress={() => setFormatFilter(item.key)}
+              activeOpacity={0.85}
             >
               <Ionicons
-                name={f.icon}
+                name={item.icon}
                 size={14}
-                color={active ? '#FFFFFF' : Colors.textSecondary}
+                color={active ? Colors.accent : Colors.textSecondary}
               />
-              <Text style={[styles.typeChipText, active && styles.typeChipTextActive]}>
-                {f.label}
+              <Text
+                style={[
+                  styles.formatPillText,
+                  active && styles.formatPillTextActive,
+                ]}
+              >
+                {item.label}
               </Text>
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
 
-      {/* Results */}
+      {/* ── Results grid ── */}
       <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
+        data={items}
+        keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
         numColumns={2}
-        columnWrapperStyle={styles.row}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.4}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.accent}
+          />
+        }
+        ListFooterComponent={
+          loading && items.length === 0 ? null : loadingMore ? (
+            <View style={styles.loadingFooter}>
+              <ActivityIndicator size="small" color={Colors.accent} />
+            </View>
+          ) : !hasMore && items.length > PAGE_SIZE ? (
+            <View style={styles.endFooter}>
+              <View style={styles.endLine} />
+              <Text style={styles.endText}>End of teachings</Text>
+              <View style={styles.endLine} />
+            </View>
+          ) : null
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="search" size={48} color={Colors.border} />
-            <Text style={styles.emptyText}>No results found</Text>
-          </View>
+          loading ? (
+            <View style={styles.loadingFooter}>
+              <ActivityIndicator color={Colors.accent} />
+            </View>
+          ) : error ? (
+            <View style={styles.empty}>
+              <View style={styles.emptyIconWrap}>
+                <Ionicons
+                  name="cloud-offline-outline"
+                  size={28}
+                  color={Colors.accent}
+                />
+              </View>
+              <Text style={styles.emptyTitle}>Couldn't load</Text>
+              <Text style={styles.emptySub}>{error}</Text>
+              <TouchableOpacity
+                style={styles.emptyBtn}
+                activeOpacity={0.85}
+                onPress={onRefresh}
+              >
+                <Text style={styles.emptyBtnText}>Try again</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.empty}>
+              <View style={styles.emptyIconWrap}>
+                <Ionicons
+                  name={search ? 'search-outline' : 'leaf-outline'}
+                  size={28}
+                  color={Colors.accent}
+                />
+              </View>
+              <Text style={styles.emptyTitle}>
+                {search ? 'No matches' : activeCategory.emptyTitle}
+              </Text>
+              <Text style={styles.emptySub}>
+                {search
+                  ? `Nothing matches "${search}". Try another word.`
+                  : activeCategory.emptySub}
+              </Text>
+              {(search ||
+                categoryFilter !== 'all' ||
+                formatFilter !== 'all') && (
+                <TouchableOpacity
+                  style={styles.emptyBtn}
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    setSearch('');
+                    setCategoryFilter('all');
+                    setFormatFilter('all');
+                  }}
+                >
+                  <Text style={styles.emptyBtnText}>Clear filters</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )
         }
       />
     </View>
@@ -194,141 +413,257 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  headerTitle: {
-    ...Typography.h2,
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.base,
-    paddingBottom: Spacing.md,
+
+  // ── Header ──
+  header: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.lg,
   },
+  title: {
+    fontFamily: 'serif',
+    fontSize: 32,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    letterSpacing: -0.6,
+    lineHeight: 38,
+  },
+  subtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+    marginTop: 4,
+    letterSpacing: 0.1,
+  },
+
+  // ── Search ──
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: Spacing.base,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.surface,
+    marginHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
-    height: 48,
+    height: 50,
     gap: Spacing.sm,
-    marginBottom: Spacing.md,
-    ...Shadows.sm,
+    marginBottom: Spacing.base,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  searchBarFocused: {
+    borderColor: Colors.accent,
+    borderWidth: 1.5,
   },
   searchInput: {
     flex: 1,
-    ...Typography.body,
+    fontSize: 15,
+    fontWeight: '500',
     color: Colors.textPrimary,
     height: '100%',
   },
-  filterRow: {
+
+  // ── Segmented control ──
+  segmented: {
     flexDirection: 'row',
-    paddingHorizontal: Spacing.base,
-    gap: Spacing.sm,
+    marginHorizontal: Spacing.lg,
     marginBottom: Spacing.lg,
+    padding: 4,
+    backgroundColor: Colors.surfaceBlue,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
   },
-  chip: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    backgroundColor: '#FFFFFF',
+  segment: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: BorderRadius.sm + 2,
+  },
+  segmentActive: {
+    backgroundColor: Colors.surface,
     ...Shadows.sm,
   },
-  chipActive: {
-    backgroundColor: Colors.primary,
-    ...Shadows.md,
-  },
-  chipText: {
+  segmentText: {
     fontSize: 13,
     fontWeight: '600',
     color: Colors.textSecondary,
+    letterSpacing: 0.1,
   },
-  chipTextActive: {
-    color: '#FFFFFF',
+  segmentTextActive: {
+    color: Colors.primary,
+    fontWeight: '700',
   },
-  typeRow: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.base,
-    gap: Spacing.sm,
+
+  // ── Format pills ──
+  formatScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
     marginBottom: Spacing.lg,
   },
-  typeChip: {
+  formatRow: {
+    paddingHorizontal: Spacing.lg,
+    gap: 8,
+    alignItems: 'center',
+  },
+  formatPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: BorderRadius.full,
-    backgroundColor: '#FFFFFF',
-    gap: 4,
-    ...Shadows.sm,
+    backgroundColor: 'transparent',
   },
-  typeChipActive: {
-    backgroundColor: Colors.accent,
-    ...Shadows.md,
+  formatPillActive: {
+    backgroundColor: 'rgba(184, 137, 62, 0.12)',
   },
-  typeChipText: {
+  formatPillText: {
     fontSize: 12,
     fontWeight: '600',
     color: Colors.textSecondary,
+    letterSpacing: 0.1,
   },
-  typeChipTextActive: {
-    color: '#FFFFFF',
+  formatPillTextActive: {
+    color: Colors.accent,
+    fontWeight: '700',
   },
+
+  // ── Grid ──
   list: {
-    paddingHorizontal: Spacing.base,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: 4,
     paddingBottom: 100,
   },
-  row: {
-    justifyContent: 'space-between',
-    marginBottom: Spacing.base,
-  },
   card: {
-    width: '48%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: BorderRadius.lg,
-    ...Shadows.md,
-    overflow: 'hidden',
+    flex: 1,
+    marginBottom: Spacing.xl,
   },
   thumbWrap: {
-    aspectRatio: 16 / 10,
-    backgroundColor: Colors.surface,
+    aspectRatio: 4 / 3,
+    backgroundColor: Colors.surfaceBlue,
+    borderRadius: BorderRadius.lg,
+    overflow: 'hidden',
+    marginBottom: Spacing.sm + 2,
   },
   thumb: {
     width: '100%',
     height: '100%',
   },
-  durationBadge: {
+  thumbOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(31, 36, 25, 0.10)',
+  },
+  thumbFooter: {
     position: 'absolute',
-    bottom: 6,
-    right: 6,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    borderRadius: BorderRadius.sm,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: Spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
   },
-  durationText: {
+  typePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    backgroundColor: 'rgba(31, 36, 25, 0.85)',
+  },
+  typePillText: {
     fontSize: 10,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  cardInfo: {
-    paddingTop: Spacing.sm,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.sm,
+    fontWeight: '700',
+    color: Colors.textInverse,
+    letterSpacing: 0.3,
   },
   cardTitle: {
-    ...Typography.bodyMedium,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    letterSpacing: -0.1,
+    lineHeight: 19,
+    marginBottom: 3,
+    paddingHorizontal: 2,
   },
-  cardSub: {
-    ...Typography.caption,
-    marginTop: 2,
+  cardScripture: {
+    fontFamily: 'serif',
+    fontStyle: 'italic',
+    fontSize: 12,
+    color: Colors.accent,
+    fontWeight: '500',
+    paddingHorizontal: 2,
   },
+
+  // ── Empty ──
   empty: {
     alignItems: 'center',
-    paddingTop: Spacing['5xl'],
+    paddingTop: Spacing['4xl'],
+    paddingHorizontal: Spacing.xl,
+  },
+  emptyIconWrap: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: Colors.surfaceBlue,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+    borderWidth: 1.5,
+    borderColor: 'rgba(184, 137, 62, 0.25)',
+  },
+  emptyTitle: {
+    fontFamily: 'serif',
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  emptySub: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: Spacing.lg,
+  },
+  emptyBtn: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 10,
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.md,
+    ...Shadows.sm,
+  },
+  emptyBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textInverse,
+    letterSpacing: 0.1,
+  },
+
+  // ── Pagination footer ──
+  loadingFooter: {
+    paddingVertical: Spacing.lg,
+    alignItems: 'center',
+  },
+  endFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
     gap: Spacing.md,
   },
-  emptyText: {
-    ...Typography.bodySmall,
+  endLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  endText: {
+    fontSize: 11,
+    fontWeight: '700',
     color: Colors.textSecondary,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
 });

@@ -4,19 +4,22 @@
 
 // ── Auth ──
 export interface User {
-  id: string;
+  id: number;
   name: string;
   email: string;
-  avatarUrl?: string;
+  avatarUrl?: string | null;
 }
 
 export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
+  isHydrating: boolean;
   hasOnboarded: boolean;
-  login: (email: string, password: string) => void;
-  signup: (name: string, email: string, password: string) => void;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (name: string, email: string, password: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  logout: () => Promise<void>;
+  hydrate: () => Promise<void>;
   completeOnboarding: () => void;
 }
 
@@ -30,12 +33,16 @@ export type AuthStackParamList = {
 
 export type RootStackParamList = {
   MainTabs: undefined;
-  SermonDetail: { sermonId: string };
-  MotivationDetail: { sermonId: string };
-  PlaylistDetail: { playlistId: string };
+  SermonDetail: { sermonId: number };
+  MotivationDetail: { sermonId: number };
+  WeeklyDevotion: { devotionId?: number } | undefined;
+  BookDetail: { bookId: number };
+  BookReader: { bookId: number };
   Profile: undefined;
   Notifications: undefined;
   PrayerRequest: undefined;
+  BookCounselling: undefined;
+  BookEric: undefined;
 };
 
 export type MainTabParamList = {

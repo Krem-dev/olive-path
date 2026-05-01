@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -6,288 +6,529 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Modal,
-  FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import {
+  useNavigation,
+  useRoute,
+  RouteProp,
+} from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants';
-import { motivations } from '../../data/mockData';
+import { Colors, Spacing, BorderRadius, Shadows } from '../../constants';
+import { sermonsApi } from '../../api/sermons';
+import { useFetch } from '../../hooks/useFetch';
 import { RootStackParamList } from '../../types';
 import { useLibraryStore } from '../../store/libraryStore';
 
-type MotivationDetailRoute = RouteProp<RootStackParamList, 'MotivationDetail'>;
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+type MotivationDetailRoute = RouteProp<
+  RootStackParamList,
+  'MotivationDetail'
+>;
+
+const TYPE_META: Record<
+  string,
+  { icon: IoniconName; label: string; primaryAction: string }
+> = {
+  video: { icon: 'videocam', label: 'Video', primaryAction: 'Watch' },
+  audio: { icon: 'headset', label: 'Audio', primaryAction: 'Listen' },
+  reading: { icon: 'book', label: 'Reading', primaryAction: 'Read' },
+};
 
 export default function MotivationDetailScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute<MotivationDetailRoute>();
-  const item = motivations.find((m) => m.id === route.params.sermonId);
+  const itemId = route.params.sermonId;
+
+  const { data: item, loading, error } = useFetch(
+    () => sermonsApi.byId(itemId),
+    [itemId],
+  );
 
   const {
-    bookmarkedIds, downloadedIds, playlists,
-    toggleBookmark, toggleDownload, addToPlaylist,
+    bookmarkedIds,
+    downloadedIds,
+    toggleBookmark,
+    toggleDownload,
   } = useLibraryStore();
 
-  const [showPlaylistSheet, setShowPlaylistSheet] = useState(false);
+  if (loading) {
+    return (
+      <View style={[styles.screen, styles.centered]}>
+        <ActivityIndicator color={Colors.accent} />
+      </View>
+    );
+  }
 
-  if (!item) return null;
+  if (error || !item) {
+    return (
+      <View style={[styles.screen, styles.centered]}>
+        <Text style={styles.errorText}>{error || 'Motivation not found.'}</Text>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.errorBtn}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.errorBtnText}>Go back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   const isBookmarked = bookmarkedIds.includes(item.id);
   const isDownloaded = downloadedIds.includes(item.id);
+  const typeMeta = TYPE_META[item.contentType] || TYPE_META.audio;
+  const dateLabel = new Date(item.publishedAt)
+    .toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+    .toUpperCase();
 
   return (
     <View style={styles.screen}>
-      {/* Back — floating white circle */}
-      <TouchableOpacity
-        style={[styles.backBtn, { top: insets.top + 8 }]}
-        onPress={() => navigation.goBack()}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      >
-        <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
-      </TouchableOpacity>
+      {/* ── Floating top bar ── */}
+      <View style={[styles.topBar, { top: insets.top + 8 }]}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+          style={styles.iconBtn}
+          hitSlop={8}
+        >
+          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {}}
+          activeOpacity={0.7}
+          style={styles.iconBtn}
+          hitSlop={8}
+        >
+          <Ionicons
+            name="share-outline"
+            size={20}
+            color={Colors.textPrimary}
+          />
+        </TouchableOpacity>
+      </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       >
-        <View style={[styles.thumbWrap, { marginTop: insets.top }]}>
-          <Image source={{ uri: item.thumbnailUrl }} style={styles.thumb} />
-          <View style={styles.overlay}>
-            <View style={styles.playCircle}>
-              <Ionicons name="play" size={32} color="#FFFFFF" />
+        {/* ── Hero ── */}
+        <View style={styles.hero}>
+          <Image
+            source={{ uri: item.thumbnailUrl }}
+            style={styles.heroImage}
+          />
+          <View style={styles.heroOverlay} />
+          <View style={styles.heroPlay}>
+            <Ionicons
+              name={typeMeta.icon}
+              size={28}
+              color={Colors.textInverse}
+            />
+          </View>
+          <View style={styles.heroPills}>
+            <View style={styles.motivBadge}>
+              <Ionicons name="flame" size={11} color={Colors.accent} />
+              <Text style={styles.motivBadgeText}>Motivation</Text>
+            </View>
+            <View style={styles.heroPill}>
+              <Ionicons
+                name="time-outline"
+                size={11}
+                color={Colors.textInverse}
+              />
+              <Text style={styles.heroPillText}>{item.duration}</Text>
             </View>
           </View>
         </View>
 
+        {/* ── Content ── */}
         <View style={styles.content}>
-          <View style={styles.badge}>
-            <Ionicons name="flame" size={12} color="#D97706" />
-            <Text style={styles.badgeText}>Motivation</Text>
-          </View>
-
+          <Text style={styles.dateEyebrow}>{dateLabel}</Text>
           <Text style={styles.title}>{item.title}</Text>
-          <View style={styles.scriptureBadge}>
-            <Text style={styles.scripture}>{item.scripture}</Text>
+
+          <View style={styles.scripturePill}>
+            <Ionicons name="leaf" size={11} color={Colors.accent} />
+            <Text style={styles.scriptureText}>{item.scripture}</Text>
           </View>
 
           {/* Quick actions */}
           <View style={styles.quickActions}>
-            <TouchableOpacity
-              style={styles.quickBtn}
+            <ActionTile
+              icon={isBookmarked ? 'bookmark' : 'bookmark-outline'}
+              label={isBookmarked ? 'Saved' : 'Save'}
+              tint={isBookmarked ? 'brass' : 'neutral'}
               onPress={() => toggleBookmark(item.id)}
-            >
-              <View style={styles.quickIconCircle}>
-                <Ionicons
-                  name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
-                  size={20}
-                  color={isBookmarked ? Colors.accent : Colors.textSecondary}
-                />
-              </View>
-              <Text style={[styles.quickText, isBookmarked && { color: Colors.accent }]}>
-                {isBookmarked ? 'Saved' : 'Save'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickBtn}
+            />
+            <ActionTile
+              icon={
+                isDownloaded
+                  ? 'checkmark-circle'
+                  : 'cloud-download-outline'
+              }
+              label={isDownloaded ? 'Downloaded' : 'Download'}
+              tint={isDownloaded ? 'success' : 'neutral'}
               onPress={() => toggleDownload(item.id)}
-            >
-              <View style={styles.quickIconCircle}>
-                <Ionicons
-                  name={isDownloaded ? 'checkmark-circle' : 'download-outline'}
-                  size={20}
-                  color={isDownloaded ? '#059669' : Colors.textSecondary}
-                />
-              </View>
-              <Text style={[styles.quickText, isDownloaded && { color: '#059669' }]}>
-                {isDownloaded ? 'Downloaded' : 'Download'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickBtn}
-              onPress={() => setShowPlaylistSheet(true)}
-            >
-              <View style={styles.quickIconCircle}>
-                <Ionicons name="add-circle-outline" size={20} color={Colors.textSecondary} />
-              </View>
-              <Text style={styles.quickText}>Playlist</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.quickBtn}>
-              <View style={styles.quickIconCircle}>
-                <Ionicons name="share-social-outline" size={20} color={Colors.textSecondary} />
-              </View>
-              <Text style={styles.quickText}>Share</Text>
-            </TouchableOpacity>
+            />
+            <ActionTile
+              icon="share-social-outline"
+              label="Share"
+              tint="neutral"
+              onPress={() => {}}
+            />
           </View>
 
-          <View style={styles.divider} />
+          {/* Message */}
+          <View style={styles.section}>
+            <Text style={styles.sectionEyebrow}>MESSAGE</Text>
+            <Text style={styles.summary}>{item.summary}</Text>
+          </View>
 
-          <Text style={styles.sectionLabel}>MESSAGE</Text>
-          <Text style={styles.message}>{item.summary}</Text>
-
-          <View style={styles.divider} />
-
-          <Text style={styles.sectionLabel}>SPEAKER</Text>
-          <Text style={styles.speaker}>Rev. Ing. Eric Ofori Broni</Text>
+          {/* Speaker */}
+          <View style={styles.section}>
+            <Text style={styles.sectionEyebrow}>SPEAKER</Text>
+            <View style={styles.speakerCard}>
+              <View style={styles.speakerAvatar}>
+                <Text style={styles.speakerInitials}>EOB</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.speakerName}>
+                  Rev. Ing. Eric Ofori Broni
+                </Text>
+                <Text style={styles.speakerTitle}>EBroni Global Media</Text>
+              </View>
+            </View>
+          </View>
         </View>
       </ScrollView>
 
-      {/* Bottom listen bar */}
-      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md }]}>
-        <TouchableOpacity style={styles.listenBtn} activeOpacity={0.8}>
-          <Ionicons name="headset-outline" size={20} color="#FFFFFF" />
-          <Text style={styles.listenBtnText}>Listen</Text>
+      {/* ── Bottom action bar ── */}
+      <View
+        style={[
+          styles.bottomBar,
+          { paddingBottom: insets.bottom + Spacing.md },
+        ]}
+      >
+        <TouchableOpacity style={styles.primaryButton} activeOpacity={0.85}>
+          <Ionicons
+            name={typeMeta.icon}
+            size={16}
+            color={Colors.textInverse}
+          />
+          <Text style={styles.primaryButtonText}>
+            {typeMeta.primaryAction}
+          </Text>
         </TouchableOpacity>
       </View>
-
-      {/* Add to Playlist Sheet */}
-      <Modal visible={showPlaylistSheet} transparent animationType="slide">
-        <TouchableOpacity
-          style={styles.sheetOverlay}
-          activeOpacity={1}
-          onPress={() => setShowPlaylistSheet(false)}
-        >
-          <View
-            style={[styles.sheetContent, { paddingBottom: insets.bottom + Spacing.lg }]}
-            onStartShouldSetResponder={() => true}
-          >
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Add to Playlist</Text>
-            {playlists.length === 0 ? (
-              <Text style={styles.sheetEmpty}>No playlists yet. Create one in Library.</Text>
-            ) : (
-              <FlatList
-                data={playlists}
-                keyExtractor={(p) => p.id}
-                renderItem={({ item: pl }) => {
-                  const alreadyIn = pl.itemIds.includes(item.id);
-                  return (
-                    <TouchableOpacity
-                      style={styles.sheetRow}
-                      onPress={() => {
-                        if (!alreadyIn) addToPlaylist(pl.id, item.id);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons
-                        name={alreadyIn ? 'checkmark-circle' : 'musical-notes-outline'}
-                        size={20}
-                        color={alreadyIn ? '#059669' : Colors.textSecondary}
-                      />
-                      <Text style={styles.sheetRowText}>{pl.name}</Text>
-                      {alreadyIn && <Text style={styles.sheetAdded}>Added</Text>}
-                    </TouchableOpacity>
-                  );
-                }}
-              />
-            )}
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </View>
   );
 }
 
+function ActionTile({
+  icon,
+  label,
+  tint,
+  onPress,
+}: {
+  icon: IoniconName;
+  label: string;
+  tint: 'brass' | 'success' | 'neutral';
+  onPress: () => void;
+}) {
+  const bg =
+    tint === 'brass'
+      ? 'rgba(184, 137, 62, 0.13)'
+      : tint === 'success'
+      ? Colors.successLight
+      : Colors.surfaceBlue;
+  const fg =
+    tint === 'brass'
+      ? Colors.accent
+      : tint === 'success'
+      ? Colors.success
+      : Colors.textSecondary;
+  const labelColor =
+    tint === 'brass'
+      ? Colors.accent
+      : tint === 'success'
+      ? Colors.success
+      : Colors.textPrimary;
+  return (
+    <TouchableOpacity
+      style={styles.tile}
+      onPress={onPress}
+      activeOpacity={0.85}
+    >
+      <View style={[styles.tileIcon, { backgroundColor: bg }]}>
+        <Ionicons name={icon} size={18} color={fg} />
+      </View>
+      <Text style={[styles.tileLabel, { color: labelColor }]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: Colors.background },
-  backBtn: {
-    position: 'absolute',
-    left: 16,
-    zIndex: 10,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+  screen: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  centered: {
     justifyContent: 'center',
     alignItems: 'center',
-    ...Shadows.md,
+    gap: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
   },
-  thumbWrap: {
-    aspectRatio: 16 / 9, backgroundColor: Colors.surface,
-    marginHorizontal: Spacing.base, borderRadius: 20, overflow: 'hidden',
+  errorText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+    textAlign: 'center',
   },
-  thumb: { width: '100%', height: '100%' },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.25)',
+  errorBtn: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 12,
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.md,
   },
-  playCircle: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-    justifyContent: 'center', alignItems: 'center', paddingLeft: 4,
+  errorBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textInverse,
   },
-  content: { padding: Spacing.base, paddingTop: Spacing.lg },
-  badge: {
-    flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
-    backgroundColor: '#FEF3C7', borderRadius: BorderRadius.full,
-    paddingHorizontal: 10, paddingVertical: 4, gap: 4, marginBottom: Spacing.md,
+  topBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    paddingHorizontal: Spacing.base,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    zIndex: 10,
   },
-  badgeText: { fontSize: 11, fontWeight: '700', color: '#D97706' },
-  title: { ...Typography.h2, marginBottom: Spacing.xs },
-  scriptureBadge: {
-    backgroundColor: Colors.surfaceBlue,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    alignSelf: 'flex-start',
-  },
-  scripture: { ...Typography.bodyMedium, color: Colors.accent, fontSize: 14 },
-  quickActions: {
-    flexDirection: 'row', justifyContent: 'space-around',
-    marginTop: Spacing.lg, paddingVertical: Spacing.md,
-    backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl,
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
     ...Shadows.sm,
   },
-  quickBtn: { alignItems: 'center', gap: 4 },
-  quickIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  hero: {
+    aspectRatio: 16 / 10,
     backgroundColor: Colors.surfaceBlue,
+    overflow: 'hidden',
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(31, 36, 25, 0.32)',
+  },
+  heroPlay: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: 64,
+    height: 64,
+    marginTop: -32,
+    marginLeft: -32,
+    borderRadius: 32,
+    backgroundColor: Colors.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Shadows.md,
+  },
+  heroPills: {
+    position: 'absolute',
+    bottom: Spacing.base,
+    left: Spacing.base,
+    flexDirection: 'row',
+    gap: 6,
+  },
+  motivBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.surfaceBlue,
+    borderWidth: 1,
+    borderColor: 'rgba(184, 137, 62, 0.4)',
+  },
+  motivBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.accent,
+    letterSpacing: 0.3,
+  },
+  heroPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    backgroundColor: 'rgba(31, 36, 25, 0.78)',
+  },
+  heroPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.textInverse,
+    letterSpacing: 0.3,
+  },
+  content: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+  },
+  dateEyebrow: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.accent,
+    letterSpacing: 1.4,
+    marginBottom: 6,
+  },
+  title: {
+    fontFamily: 'serif',
+    fontSize: 28,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    letterSpacing: -0.5,
+    lineHeight: 34,
+    marginBottom: Spacing.md,
+  },
+  scripturePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.surfaceBlue,
+    borderWidth: 1,
+    borderColor: 'rgba(184, 137, 62, 0.25)',
+    marginBottom: Spacing.lg,
+  },
+  scriptureText: {
+    fontFamily: 'serif',
+    fontStyle: 'italic',
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.accent,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginBottom: Spacing.xl,
+  },
+  tile: {
+    flex: 1,
+    paddingVertical: Spacing.base,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    ...Shadows.sm,
+  },
+  tileIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  quickText: { fontSize: 11, fontWeight: '600', color: Colors.textSecondary },
-  divider: { height: 1, backgroundColor: Colors.borderLight, marginVertical: Spacing.lg },
-  sectionLabel: {
-    ...Typography.overline,
-    marginBottom: Spacing.sm,
+  tileLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.1,
   },
-  message: { ...Typography.body, color: Colors.textSecondary, lineHeight: 24 },
-  speaker: { ...Typography.bodyMedium },
+  section: {
+    marginBottom: Spacing.xl,
+  },
+  sectionEyebrow: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.accent,
+    letterSpacing: 1.4,
+    marginBottom: Spacing.base,
+  },
+  summary: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: Colors.textPrimary,
+    lineHeight: 25,
+  },
+  speakerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingVertical: Spacing.base,
+    paddingHorizontal: Spacing.base,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+  },
+  speakerAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  speakerInitials: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textInverse,
+    letterSpacing: 0.5,
+  },
+  speakerName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 1,
+  },
+  speakerTitle: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+  },
   bottomBar: {
-    paddingHorizontal: Spacing.base, paddingTop: Spacing.md,
-    backgroundColor: '#FFFFFF',
-    ...Shadows.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    backgroundColor: Colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderLight,
   },
-  listenBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: Colors.accent, borderRadius: BorderRadius.full,
-    paddingVertical: Spacing.md, gap: Spacing.sm,
-    ...Shadows.md,
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.primary,
+    paddingVertical: 14,
+    borderRadius: BorderRadius.md,
+    ...Shadows.sm,
   },
-  listenBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
-  sheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheetContent: {
-    backgroundColor: '#FFFFFF', borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    padding: Spacing.xl, maxHeight: '50%',
+  primaryButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.textInverse,
+    letterSpacing: 0.1,
   },
-  sheetHandle: {
-    width: 48, height: 4, borderRadius: 2,
-    backgroundColor: '#D0D5DD', alignSelf: 'center', marginBottom: Spacing.lg,
-  },
-  sheetTitle: { ...Typography.h4, marginBottom: Spacing.lg },
-  sheetEmpty: { ...Typography.bodySmall, color: Colors.textSecondary, textAlign: 'center', paddingVertical: Spacing.xl },
-  sheetRow: {
-    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-    paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.borderLight,
-  },
-  sheetRowText: { ...Typography.bodyMedium, fontSize: 14, flex: 1 },
-  sheetAdded: { fontSize: 12, fontWeight: '600', color: '#059669' },
 });

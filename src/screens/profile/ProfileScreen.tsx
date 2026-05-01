@@ -10,26 +10,19 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants';
+import { Colors, Spacing, BorderRadius, Shadows } from '../../constants';
 import { useAuthStore } from '../../store/authStore';
 
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
+type Tint = 'olive' | 'brass';
+
 interface MenuItem {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IoniconName;
   label: string;
   onPress?: () => void;
-  color?: string;
   rightText?: string;
-  iconTint?: string;
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+  tint: Tint;
 }
 
 export default function ProfileScreen() {
@@ -37,130 +30,149 @@ export default function ProfileScreen() {
   const navigation = useNavigation();
   const { user, logout } = useAuthStore();
 
-  const generalItems: MenuItem[] = [
-    {
-      icon: 'notifications-outline',
-      label: 'Notifications',
-      rightText: 'On',
-      iconTint: '#E8F4FD',
-    },
-    {
-      icon: 'download-outline',
-      label: 'Downloads',
-      rightText: 'Wi-Fi only',
-      iconTint: '#D1FAE5',
-    },
-  ];
-
   const aboutItems: MenuItem[] = [
     {
       icon: 'globe-outline',
-      label: 'Visit Website',
-      onPress: () => Linking.openURL('https://www.olivepath.org'),
-      iconTint: '#E8F4FD',
+      label: 'Visit website',
+      onPress: () => Linking.openURL('https://www.olivepathnetwork.org'),
+      tint: 'brass',
     },
     {
       icon: 'logo-facebook',
       label: 'Facebook',
-      onPress: () => Linking.openURL('https://www.olivepathnetwork.org'),
-      iconTint: '#E8F0FD',
+      onPress: () =>
+        Linking.openURL('https://www.facebook.com/share/18ctrkC9mV/'),
+      tint: 'olive',
+    },
+    {
+      icon: 'logo-instagram',
+      label: 'Instagram',
+      onPress: () =>
+        Linking.openURL('https://www.instagram.com/olivepathnetwork'),
+      tint: 'brass',
+    },
+    {
+      icon: 'logo-youtube',
+      label: 'YouTube',
+      onPress: () =>
+        Linking.openURL('https://youtube.com/@olivepathnetwork'),
+      tint: 'olive',
     },
     {
       icon: 'mail-outline',
-      label: 'Contact Us',
-      onPress: () => Linking.openURL('mailto:ericbroni@olivepath.org'),
-      iconTint: '#FEF3C7',
+      label: 'Contact us',
+      onPress: () =>
+        Linking.openURL('mailto:ericbroni@olivepathnetwork.org'),
+      tint: 'brass',
     },
     {
       icon: 'information-circle-outline',
-      label: 'About',
+      label: 'App version',
       rightText: 'v1.0.0',
-      iconTint: '#F0F2F5',
+      tint: 'olive',
     },
   ];
 
   const renderSection = (title: string, items: MenuItem[]) => (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={styles.sectionEyebrow}>{title}</Text>
       <View style={styles.sectionCard}>
-        {items.map((item, index) => (
-          <TouchableOpacity
-            key={item.label}
-            style={[
-              styles.menuRow,
-              index < items.length - 1 && styles.menuRowBorder,
-            ]}
-            onPress={item.onPress}
-            activeOpacity={item.onPress ? 0.7 : 1}
-          >
-            <View style={[styles.iconCircle, { backgroundColor: item.iconTint || '#F0F2F5' }]}>
-              <Ionicons
-                name={item.icon}
-                size={18}
-                color={item.color || Colors.textSecondary}
-              />
-            </View>
-            <Text style={[styles.menuLabel, item.color ? { color: item.color } : undefined]}>
-              {item.label}
-            </Text>
-            {item.rightText && (
-              <Text style={styles.menuRight}>{item.rightText}</Text>
-            )}
-            {item.onPress && (
-              <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
-            )}
-          </TouchableOpacity>
-        ))}
+        {items.map((item, index) => {
+          const tintBg =
+            item.tint === 'olive'
+              ? 'rgba(61, 79, 44, 0.10)'
+              : 'rgba(184, 137, 62, 0.13)';
+          const tintFg =
+            item.tint === 'olive' ? Colors.primary : Colors.accent;
+          return (
+            <TouchableOpacity
+              key={item.label}
+              style={[
+                styles.menuRow,
+                index < items.length - 1 && styles.menuRowBorder,
+              ]}
+              onPress={item.onPress}
+              activeOpacity={item.onPress ? 0.7 : 1}
+              disabled={!item.onPress && !item.rightText}
+            >
+              <View
+                style={[styles.iconCircle, { backgroundColor: tintBg }]}
+              >
+                <Ionicons name={item.icon} size={18} color={tintFg} />
+              </View>
+              <Text style={styles.menuLabel}>{item.label}</Text>
+              {item.rightText ? (
+                <Text style={styles.menuRight}>{item.rightText}</Text>
+              ) : null}
+              {item.onPress ? (
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={Colors.textSecondary}
+                />
+              ) : null}
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Back */}
-      <View style={[styles.backRow, { paddingTop: insets.top + Spacing.sm }]}>
+    <View style={styles.screen}>
+      {/* ── Top bar ── */}
+      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          activeOpacity={0.7}
+          style={styles.backBtn}
+          hitSlop={8}
         >
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.backTitle}>Profile</Text>
-        <View style={{ width: 24 }} />
+        <Text style={styles.topTitle}>Profile</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.avatarCircle}>
-          <Text style={styles.avatarText}>
-            {getInitials(user?.name || 'Guest')}
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── User card ── */}
+        <View style={styles.userCard}>
+          <Text style={styles.userName}>{user?.name || 'Friend'}</Text>
+          {user?.email ? (
+            <Text style={styles.userEmail}>{user.email}</Text>
+          ) : null}
+        </View>
+
+        {/* ── About ── */}
+        {renderSection('ABOUT OLIVE PATH', aboutItems)}
+
+        {/* ── Mission card ── */}
+        <View style={styles.missionCard}>
+          <Ionicons name="leaf" size={14} color={Colors.accent} />
+          <Text style={styles.missionText}>
+            EBroni Global Media — making Christ known. All teachings by Rev.
+            Ing. Eric Ofori Broni.
           </Text>
         </View>
-        <Text style={styles.userName}>{user?.name || 'Guest'}</Text>
-        <Text style={styles.userEmail}>{user?.email || ''}</Text>
-      </View>
 
-      {/* Sections */}
-      {renderSection('General', generalItems)}
-      {renderSection('About Olive Path', aboutItems)}
-
-      {/* About text */}
-      <View style={styles.aboutBox}>
-        <Text style={styles.aboutText}>
-          EBroni Global Media — Making Christ known. All teachings by Rev. Ing. Eric Ofori Broni.
-        </Text>
-      </View>
-
-      {/* Logout */}
-      <TouchableOpacity style={styles.logoutBtn} onPress={logout} activeOpacity={0.8}>
-        <Ionicons name="log-out-outline" size={20} color="#DC2626" />
-        <Text style={styles.logoutText}>Log Out</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        {/* ── Logout ── */}
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={logout}
+          activeOpacity={0.85}
+        >
+          <Ionicons
+            name="log-out-outline"
+            size={18}
+            color={Colors.error}
+          />
+          <Text style={styles.logoutText}>Log out</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -169,69 +181,77 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  // Back
-  backRow: {
+
+  // ── Top bar ──
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.base,
     paddingBottom: Spacing.md,
   },
-  backTitle: {
-    ...Typography.bodyMedium,
-    fontSize: 16,
-  },
-  // Header
-  header: {
-    alignItems: 'center',
-    paddingBottom: Spacing['3xl'],
-  },
-  avatarCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: Colors.primary,
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.md,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  avatarText: {
-    fontSize: 24,
+  topTitle: {
+    fontSize: 14,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.textPrimary,
+    letterSpacing: 0.1,
+  },
+
+  // ── User card ──
+  userCard: {
+    alignItems: 'center',
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
   },
   userName: {
-    ...Typography.h3,
+    fontFamily: 'serif',
+    fontSize: 28,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    letterSpacing: -0.5,
+    marginBottom: 4,
   },
   userEmail: {
-    ...Typography.bodySmall,
+    fontSize: 13,
+    fontWeight: '500',
     color: Colors.textSecondary,
-    marginTop: 2,
   },
-  // Sections
+
+  // ── Section ──
   section: {
-    paddingHorizontal: Spacing.base,
+    paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.lg,
   },
-  sectionTitle: {
-    fontSize: 11,
+  sectionEyebrow: {
+    fontSize: 10,
     fontWeight: '700',
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: Spacing.sm,
-    paddingLeft: Spacing.xs,
+    color: Colors.accent,
+    letterSpacing: 1.4,
+    marginBottom: 10,
+    paddingHorizontal: Spacing.xs,
   },
   sectionCard: {
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
     ...Shadows.sm,
   },
   menuRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.base,
+    paddingVertical: 14,
     paddingHorizontal: Spacing.base,
     gap: Spacing.md,
   },
@@ -240,47 +260,65 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.borderLight,
   },
   iconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: BorderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
   menuLabel: {
-    ...Typography.bodyMedium,
-    fontSize: 14,
     flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    letterSpacing: 0.1,
   },
   menuRight: {
-    ...Typography.caption,
+    fontSize: 12,
+    fontWeight: '600',
     color: Colors.textSecondary,
   },
-  // About
-  aboutBox: {
-    paddingHorizontal: Spacing.xl,
-    marginBottom: Spacing.xl,
+
+  // ── Mission card ──
+  missionCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.surfaceBlue,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(184, 137, 62, 0.2)',
   },
-  aboutText: {
-    ...Typography.bodySmall,
+  missionText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '500',
     color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 18,
+    letterSpacing: 0.1,
   },
-  // Logout
+
+  // ── Logout ──
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: Spacing.base,
-    paddingVertical: Spacing.base,
-    borderRadius: BorderRadius.xl,
-    backgroundColor: '#FEE2E2',
-    gap: Spacing.sm,
-    ...Shadows.sm,
+    gap: 8,
+    marginHorizontal: Spacing.lg,
+    paddingVertical: 14,
+    backgroundColor: Colors.errorLight,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(196, 69, 54, 0.25)',
   },
   logoutText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#DC2626',
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.error,
+    letterSpacing: 0.1,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,45 +10,50 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants';
-import { qaItems } from '../../data/mockData';
+import { Colors, Spacing, BorderRadius, Shadows } from '../../constants';
+import { qaApi } from '../../api/qa';
+import { useFetch } from '../../hooks/useFetch';
 import { QAItem } from '../../types/content';
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
-
-const CATEGORIES = ['All', ...Array.from(new Set(qaItems.map((q) => q.category)))];
 
 export default function QAScreen() {
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  const filtered = useMemo(() => {
-    let items = qaItems;
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
-    if (activeCategory !== 'All') {
-      items = items.filter((i) => i.category === activeCategory);
-    }
+  const itemsFetch = useFetch(
+    () =>
+      qaApi.list({
+        category: activeCategory === 'All' ? undefined : activeCategory,
+        search: debouncedSearch || undefined,
+      }),
+    [activeCategory, debouncedSearch],
+  );
 
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      items = items.filter(
-        (i) =>
-          i.question.toLowerCase().includes(q) ||
-          i.answer.toLowerCase().includes(q)
-      );
-    }
+  const categoriesFetch = useFetch(() => qaApi.categories(), []);
 
-    return items;
-  }, [activeCategory, search]);
+  const items = itemsFetch.data ?? [];
+  const CATEGORIES = ['All', ...(categoriesFetch.data ?? [])];
 
-  const toggleExpand = (id: string) => {
+  const toggleExpand = (id: number) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedId(expandedId === id ? null : id);
   };
@@ -57,27 +62,36 @@ export default function QAScreen() {
     const isExpanded = expandedId === item.id;
     return (
       <TouchableOpacity
-        style={styles.qaCard}
+        style={[styles.qaCard, isExpanded && styles.qaCardExpanded]}
         onPress={() => toggleExpand(item.id)}
-        activeOpacity={0.8}
+        activeOpacity={0.92}
       >
         <View style={styles.qaHeader}>
-          <View style={styles.qaQuestion}>
+          <View style={styles.qaQuestionWrap}>
+            <View style={styles.categoryPill}>
+              <Text style={styles.categoryPillText}>{item.category}</Text>
+            </View>
             <Text style={styles.questionText}>{item.question}</Text>
-            <Text style={styles.categoryTag}>{item.category}</Text>
           </View>
-          <Ionicons
-            name={isExpanded ? 'chevron-up' : 'chevron-down'}
-            size={18}
-            color={Colors.textSecondary}
-          />
+          <View
+            style={[
+              styles.chevronWrap,
+              isExpanded && styles.chevronWrapActive,
+            ]}
+          >
+            <Ionicons
+              name={isExpanded ? 'remove' : 'add'}
+              size={18}
+              color={isExpanded ? Colors.accent : Colors.textPrimary}
+            />
+          </View>
         </View>
         {isExpanded && (
           <View style={styles.answerSection}>
             <View style={styles.answerDivider} />
             <Text style={styles.answerText}>{item.answer}</Text>
-            <View style={styles.scriptureRow}>
-              <Ionicons name="book-outline" size={13} color={Colors.accent} />
+            <View style={styles.scriptureCard}>
+              <Ionicons name="leaf" size={12} color={Colors.accent} />
               <Text style={styles.scriptureText}>{item.scripture}</Text>
             </View>
           </View>
@@ -88,33 +102,56 @@ export default function QAScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <Text style={styles.headerTitle}>Questions & Answers</Text>
+      {/* ── Header ── */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Biblical Q&A</Text>
+        <Text style={styles.subtitle}>
+          {items.length}{' '}
+          {items.length === 1 ? 'question' : 'questions'}
+          {activeCategory !== 'All' ? ` in ${activeCategory.toLowerCase()}` : ''}
+        </Text>
+      </View>
 
-      {/* Search */}
-      <View style={styles.searchBar}>
-        <Ionicons name="search-outline" size={18} color={Colors.textSecondary} />
+      {/* ── Search ── */}
+      <View
+        style={[
+          styles.searchBar,
+          searchFocused && styles.searchBarFocused,
+        ]}
+      >
+        <Ionicons
+          name="search-outline"
+          size={18}
+          color={searchFocused ? Colors.accent : Colors.textSecondary}
+        />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search questions..."
+          placeholder="Search questions or scripture"
           placeholderTextColor={Colors.textSecondary}
           value={search}
           onChangeText={setSearch}
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setSearchFocused(false)}
           autoCapitalize="none"
           autoCorrect={false}
         />
         {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={18} color={Colors.textSecondary} />
+          <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
+            <Ionicons
+              name="close-circle"
+              size={18}
+              color={Colors.textSecondary}
+            />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Category chips */}
+      {/* ── Category pills ── */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipRow}
         style={styles.chipScroll}
+        contentContainerStyle={styles.chipRow}
       >
         {CATEGORIES.map((cat) => {
           const active = activeCategory === cat;
@@ -123,9 +160,11 @@ export default function QAScreen() {
               key={cat}
               style={[styles.chip, active && styles.chipActive]}
               onPress={() => setActiveCategory(cat)}
-              activeOpacity={0.7}
+              activeOpacity={0.85}
             >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>
+              <Text
+                style={[styles.chipText, active && styles.chipTextActive]}
+              >
                 {cat}
               </Text>
             </TouchableOpacity>
@@ -133,18 +172,49 @@ export default function QAScreen() {
         })}
       </ScrollView>
 
-      {/* Q&A list */}
+      {/* ── Q&A list ── */}
       <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
+        data={items}
+        keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
+          itemsFetch.loading ? (
+            <View style={[styles.empty, { paddingTop: 80 }]}>
+              <ActivityIndicator color={Colors.accent} />
+            </View>
+          ) : (
           <View style={styles.empty}>
-            <Ionicons name="chatbubbles-outline" size={48} color={Colors.border} />
-            <Text style={styles.emptyText}>No questions found</Text>
+            <View style={styles.emptyIconWrap}>
+              <Ionicons
+                name={search ? 'search-outline' : 'help-circle-outline'}
+                size={28}
+                color={Colors.accent}
+              />
+            </View>
+            <Text style={styles.emptyTitle}>
+              {search ? 'No matches' : 'No questions yet'}
+            </Text>
+            <Text style={styles.emptySub}>
+              {search
+                ? `Nothing matches "${search}". Try another word.`
+                : 'New questions will appear here as they\'re shared.'}
+            </Text>
+            {(search || activeCategory !== 'All') && (
+              <TouchableOpacity
+                style={styles.emptyBtn}
+                activeOpacity={0.85}
+                onPress={() => {
+                  setSearch('');
+                  setActiveCategory('All');
+                }}
+              >
+                <Text style={styles.emptyBtnText}>Clear filters</Text>
+              </TouchableOpacity>
+            )}
           </View>
+          )
         }
       />
     </View>
@@ -152,132 +222,237 @@ export default function QAScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: Colors.background },
-  headerTitle: {
-    ...Typography.h2,
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.base,
-    paddingBottom: Spacing.md,
+  screen: {
+    flex: 1,
+    backgroundColor: Colors.background,
   },
+
+  // ── Header ──
+  header: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.lg,
+  },
+  title: {
+    fontFamily: 'serif',
+    fontSize: 32,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    letterSpacing: -0.6,
+    lineHeight: 38,
+  },
+  subtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+    marginTop: 4,
+    letterSpacing: 0.1,
+  },
+
+  // ── Search ──
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: Spacing.base,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.surface,
+    marginHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
-    height: 48,
+    height: 50,
     gap: Spacing.sm,
-    marginBottom: Spacing.md,
-    ...Shadows.sm,
+    marginBottom: Spacing.base,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  searchBarFocused: {
+    borderColor: Colors.accent,
+    borderWidth: 1.5,
   },
   searchInput: {
     flex: 1,
-    ...Typography.body,
+    fontSize: 15,
+    fontWeight: '500',
     color: Colors.textPrimary,
     height: '100%',
   },
+
+  // ── Chip scroll ──
   chipScroll: {
     flexGrow: 0,
-    marginBottom: Spacing.md,
+    flexShrink: 0,
+    marginBottom: Spacing.lg,
   },
   chipRow: {
-    paddingHorizontal: Spacing.base,
-    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    gap: 8,
+    alignItems: 'center',
   },
   chip: {
     paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
+    paddingVertical: 9,
     borderRadius: BorderRadius.full,
-    backgroundColor: '#FFFFFF',
-    ...Shadows.sm,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   chipActive: {
     backgroundColor: Colors.primary,
-    ...Shadows.md,
+    borderColor: Colors.primary,
   },
   chipText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.textSecondary,
+    color: Colors.textPrimary,
+    letterSpacing: 0.1,
   },
   chipTextActive: {
-    color: '#FFFFFF',
+    color: Colors.textInverse,
+    fontWeight: '700',
   },
+
+  // ── List ──
   list: {
-    paddingHorizontal: Spacing.base,
+    paddingHorizontal: Spacing.lg,
     paddingBottom: 100,
   },
-  // Q&A Card
+
+  // ── Q&A Card ──
   qaCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
     ...Shadows.sm,
+  },
+  qaCardExpanded: {
+    borderColor: 'rgba(184, 137, 62, 0.35)',
   },
   qaHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
-  qaQuestion: {
+  qaQuestionWrap: {
     flex: 1,
   },
-  questionText: {
-    ...Typography.bodyMedium,
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  categoryTag: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.accent,
-    marginTop: 4,
-    backgroundColor: Colors.surfaceBlue,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+  categoryPill: {
     alignSelf: 'flex-start',
-    overflow: 'hidden',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.surfaceBlue,
+    marginBottom: 8,
   },
+  categoryPillText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.accent,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  questionText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    lineHeight: 22,
+    letterSpacing: -0.1,
+  },
+  chevronWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: Colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    marginTop: 2,
+  },
+  chevronWrapActive: {
+    backgroundColor: Colors.surfaceBlue,
+    borderColor: 'rgba(184, 137, 62, 0.35)',
+  },
+
+  // ── Answer ──
   answerSection: {
-    marginTop: Spacing.sm,
+    marginTop: Spacing.base,
   },
   answerDivider: {
     height: 1,
     backgroundColor: Colors.borderLight,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.base,
   },
   answerText: {
-    ...Typography.body,
-    color: Colors.textSecondary,
-    lineHeight: 22,
     fontSize: 14,
+    fontWeight: '400',
+    color: Colors.textPrimary,
+    lineHeight: 22,
+    marginBottom: Spacing.base,
   },
-  scriptureRow: {
+  scriptureCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: Spacing.md,
-    backgroundColor: Colors.surfaceBlue,
+    gap: 8,
     alignSelf: 'flex-start',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.surfaceBlue,
+    borderWidth: 1,
+    borderColor: 'rgba(184, 137, 62, 0.25)',
   },
   scriptureText: {
-    fontSize: 12,
+    fontFamily: 'serif',
+    fontStyle: 'italic',
+    fontSize: 13,
     fontWeight: '600',
     color: Colors.accent,
   },
+
+  // ── Empty ──
   empty: {
     alignItems: 'center',
-    paddingTop: Spacing['5xl'],
-    gap: Spacing.md,
+    paddingTop: Spacing['4xl'],
+    paddingHorizontal: Spacing.xl,
   },
-  emptyText: {
-    ...Typography.bodySmall,
+  emptyIconWrap: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: Colors.surfaceBlue,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+    borderWidth: 1.5,
+    borderColor: 'rgba(184, 137, 62, 0.25)',
+  },
+  emptyTitle: {
+    fontFamily: 'serif',
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  emptySub: {
+    fontSize: 13,
     color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: Spacing.lg,
+  },
+  emptyBtn: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 10,
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.md,
+    ...Shadows.sm,
+  },
+  emptyBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textInverse,
+    letterSpacing: 0.1,
   },
 });

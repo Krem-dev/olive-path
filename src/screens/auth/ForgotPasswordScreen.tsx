@@ -2,32 +2,52 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Shadows } from '../../constants';
 import AuthInput from '../../components/common/AuthInput';
+import { useAuthStore } from '../../store/authStore';
+import { ApiError } from '../../api/client';
 
 export default function ForgotPasswordScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const forgotPassword = useAuthStore((s) => s.forgotPassword);
 
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = () => {
-    if (!email.trim()) { setError('Email is required'); return; }
-    if (!/\S+@\S+\.\S+/.test(email)) { setError('Enter a valid email'); return; }
+  const handleSubmit = async () => {
+    if (!email.trim()) {
+      setError('Email is required');
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setError('Enter a valid email');
+      return;
+    }
     setError('');
-    setSent(true);
+    setSubmitting(true);
+    try {
+      await forgotPassword(email);
+      setSent(true);
+    } catch (e) {
+      setError(
+        e instanceof ApiError ? e.message : 'Could not send reset link. Try again.',
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -35,69 +55,100 @@ export default function ForgotPasswordScreen() {
       style={styles.screen}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      {/* ── Top bar ── */}
+      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+          style={styles.backBtn}
+          hitSlop={8}
+        >
+          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         contentContainerStyle={[
           styles.container,
-          { paddingTop: insets.top + Spacing['2xl'], paddingBottom: insets.bottom + Spacing.xl },
+          { paddingBottom: insets.bottom + Spacing.xl },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Logo */}
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../../../assets/logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </View>
-
         {sent ? (
           <View style={styles.sentContainer}>
-            <Ionicons name="checkmark-circle" size={56} color={Colors.success} />
-            <Text style={styles.sentTitle}>Check Your Email</Text>
-            <Text style={styles.sentEmail}>{email}</Text>
+            <View style={styles.sentIconWrap}>
+              <Ionicons
+                name="mail-open-outline"
+                size={36}
+                color={Colors.accent}
+              />
+            </View>
+            <Text style={styles.sentTitle}>Check your email</Text>
+            <Text style={styles.sentBody}>
+              We sent a reset link to{' '}
+              <Text style={styles.sentEmail}>{email}</Text>
+            </Text>
             <TouchableOpacity
-              style={styles.button}
+              style={[styles.primaryButton, { marginTop: Spacing.xl }]}
               onPress={() => navigation.goBack()}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
-              <Text style={styles.buttonText}>Back to Sign In</Text>
+              <Text style={styles.primaryButtonText}>Back to Sign In</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <>
-            <Text style={styles.subtitle}>
-              Enter your email and we'll send you a reset link.
-            </Text>
+            <View style={styles.header}>
+              <Text style={styles.title}>Reset password</Text>
+            </View>
 
             <View style={styles.form}>
               <AuthInput
                 label="Email"
-                placeholder="Enter your email"
+                placeholder="you@example.com"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(v) => {
+                  setEmail(v);
+                  if (error) setError('');
+                }}
                 error={error}
                 keyboardType="email-address"
                 autoComplete="email"
                 autoCapitalize="none"
+                leftIcon="mail-outline"
               />
+
+              <TouchableOpacity
+                style={[styles.primaryButton, submitting && styles.buttonDisabled]}
+                onPress={handleSubmit}
+                activeOpacity={0.85}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color={Colors.textInverse} />
+                ) : (
+                  <>
+                    <Text style={styles.primaryButtonText}>Send reset link</Text>
+                    <Ionicons
+                      name="arrow-forward"
+                      size={18}
+                      color={Colors.textInverse}
+                    />
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleSubmit}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.buttonText}>Continue</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.backLink}
-              onPress={() => navigation.goBack()}
-            >
-              <Text style={styles.backLinkText}>Back to Sign In</Text>
-            </TouchableOpacity>
+            <View style={styles.footer}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                activeOpacity={0.7}
+                hitSlop={6}
+              >
+                <Text style={styles.footerLink}>Back to Sign In</Text>
+              </TouchableOpacity>
+            </View>
           </>
         )}
       </ScrollView>
@@ -110,63 +161,121 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+
+  // ── Top bar ──
+  topBar: {
+    paddingHorizontal: Spacing.base,
+    paddingBottom: Spacing.sm,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+
+  // ── Container ──
   container: {
     flexGrow: 1,
-    paddingHorizontal: Spacing.xl,
-    justifyContent: 'center',
+    paddingHorizontal: Spacing.lg,
   },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
-    marginTop: Spacing.md,
+
+  // ── Header ──
+  header: {
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
   },
-  logo: {
-    width: 120,
-    height: 60,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-    marginBottom: Spacing.xl,
-  },
-  form: {
-    marginBottom: Spacing.md,
-  },
-  button: {
-    backgroundColor: Colors.accent,
-    paddingVertical: 16,
-    borderRadius: BorderRadius.full,
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
-    ...Shadows.md,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  backLink: {
-    alignSelf: 'center',
-  },
-  backLinkText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.accent,
-  },
-  sentContainer: {
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  sentTitle: {
-    fontSize: 22,
+  title: {
+    fontFamily: 'serif',
+    fontSize: 32,
     fontWeight: '700',
     color: Colors.textPrimary,
+    letterSpacing: -0.6,
+    lineHeight: 38,
+  },
+
+  // ── Form ──
+  form: {
+    gap: 0,
+  },
+
+  // ── Buttons ──
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.primary,
+    paddingVertical: 16,
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.sm,
+    ...Shadows.sm,
+  },
+  primaryButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textInverse,
+    letterSpacing: 0.1,
+  },
+  buttonDisabled: {
+    opacity: 0.65,
+  },
+
+  // ── Footer ──
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: Spacing['2xl'],
+    paddingTop: Spacing.lg,
+  },
+  footerLink: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.accent,
+  },
+
+  // ── Sent state ──
+  sentContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: Spacing['3xl'],
+    paddingHorizontal: Spacing.lg,
+  },
+  sentIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.surfaceBlue,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.xl,
+    borderWidth: 1.5,
+    borderColor: 'rgba(184, 137, 62, 0.25)',
+  },
+  sentTitle: {
+    fontFamily: 'serif',
+    fontSize: 28,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    letterSpacing: -0.5,
+    marginBottom: Spacing.md,
+    textAlign: 'center',
+  },
+  sentBody: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: Colors.textSecondary,
+    lineHeight: 22,
+    textAlign: 'center',
   },
   sentEmail: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-    marginBottom: Spacing.md,
+    fontWeight: '700',
+    color: Colors.accent,
   },
 });

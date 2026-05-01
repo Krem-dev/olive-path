@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import {
   View,
+  Text,
   Image,
   StyleSheet,
-  Dimensions,
   StatusBar,
 } from 'react-native';
 import Animated, {
@@ -13,8 +13,7 @@ import Animated, {
   withDelay,
   Easing,
 } from 'react-native-reanimated';
-
-const { width, height } = Dimensions.get('window');
+import { Colors, Spacing } from '../constants';
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -22,24 +21,24 @@ interface SplashScreenProps {
 
 export default function SplashScreen({ onFinish }: SplashScreenProps) {
   const logoOpacity = useSharedValue(0);
-  const logoScale = useSharedValue(0.8);
+  const logoScale = useSharedValue(0.85);
+  const wordOpacity = useSharedValue(0);
 
   useEffect(() => {
-    // Fade in logo
     logoOpacity.value = withDelay(
-      300,
-      withTiming(1, { duration: 800, easing: Easing.out(Easing.ease) })
+      200,
+      withTiming(1, { duration: 700, easing: Easing.out(Easing.ease) }),
     );
     logoScale.value = withDelay(
-      300,
-      withTiming(1, { duration: 800, easing: Easing.out(Easing.back(1.2)) })
+      200,
+      withTiming(1, { duration: 700, easing: Easing.out(Easing.back(1.1)) }),
+    );
+    wordOpacity.value = withDelay(
+      700,
+      withTiming(1, { duration: 600, easing: Easing.out(Easing.ease) }),
     );
 
-    // Navigate after 2.5s
-    const timer = setTimeout(() => {
-      onFinish();
-    }, 2500);
-
+    const timer = setTimeout(() => onFinish(), 2400);
     return () => clearTimeout(timer);
   }, []);
 
@@ -47,29 +46,33 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
     opacity: logoOpacity.value,
     transform: [{ scale: logoScale.value }],
   }));
+  const wordAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: wordOpacity.value,
+  }));
 
   return (
     <View style={styles.container}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
-
-      {/* Background image */}
-      <Image
-        source={require('../../assets/splash-bg.jpg')}
-        style={styles.backgroundImage}
-        resizeMode="cover"
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="dark-content"
       />
-
-      {/* Dark overlay */}
-      <View style={styles.overlay} />
-
-      {/* Logo centered */}
-      <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
-        <Image
-          source={require('../../assets/logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </Animated.View>
+      <View style={styles.center}>
+        <Animated.View style={[styles.logoWrap, logoAnimatedStyle]}>
+          <Image
+            source={require('../../assets/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </Animated.View>
+        <Animated.View style={[styles.wordWrap, wordAnimatedStyle]}>
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.tagline}>EBRONI GLOBAL MEDIA</Text>
+            <View style={styles.dividerLine} />
+          </View>
+        </Animated.View>
+      </View>
     </View>
   );
 }
@@ -77,24 +80,38 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#011838',
+    backgroundColor: Colors.background,
   },
-  backgroundImage: {
-    ...StyleSheet.absoluteFillObject,
-    width,
-    height,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(1, 24, 56, 0.88)',
-  },
-  logoContainer: {
+  center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  logoWrap: {
+    marginBottom: Spacing.xl,
+  },
   logo: {
     width: 180,
     height: 180,
+  },
+  wordWrap: {
+    alignItems: 'center',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  dividerLine: {
+    width: 28,
+    height: 1,
+    backgroundColor: Colors.accent,
+    opacity: 0.55,
+  },
+  tagline: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.accent,
+    letterSpacing: 1.8,
   },
 });

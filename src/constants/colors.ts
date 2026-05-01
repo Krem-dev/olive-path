@@ -1,51 +1,51 @@
 /**
  * Olive Path — Design System Colors
- * From client brand assets
+ * "Olive & Brass" palette — warm, reverent, ministry-focused
  */
 
 export const Colors = {
-  // Brand
-  primary: '#011838',        // Deep navy — headings, primary elements
-  primaryDark: '#000D1F',    // Darker navy — pressed states
-  primaryLight: '#0A2E5C',   // Lighter navy
+  // Brand — Deep olive (rooted, scripture, sanctuary)
+  primary: '#3D4F2C',         // Deep olive — headings, primary actions
+  primaryDark: '#2D3B20',     // Pressed olive
+  primaryLight: '#556B3D',    // Lighter olive — gradients
 
-  // Tertiary / Accent
-  accent: '#028FD6',         // Bright blue — buttons, links, active states
-  accentDark: '#0278B5',     // Pressed accent
-  accentLight: '#3AA8E8',    // Lighter accent
+  // Accent — Warm brass / antique gold (anointing, featured, scripture refs)
+  accent: '#B8893E',          // Brass — CTAs, links, scripture badges
+  accentDark: '#9A7232',      // Pressed brass
+  accentLight: '#D4A85A',     // Lighter brass — tints
 
-  // Backgrounds
-  background: '#F0F2F5',     // Main background — light gray
-  surface: '#FFFFFF',         // Card backgrounds — white on gray
-  surfaceElevated: '#FFFFFF', // Modals, sheets
-  surfaceBlue: '#E8F2FA',    // Soft blue wash — featured cards, tints
+  // Backgrounds — Warm ground
+  background: '#FAF7F0',      // Warm ivory — page background
+  surface: '#FFFEFB',         // Off-white — card surfaces
+  surfaceElevated: '#FFFFFF', // Pure white — modals, sheets
+  surfaceBlue: '#F2EDE0',     // Warm cream wash — featured tints, badges
 
   // Text
-  textPrimary: '#011838',    // Headings, body
-  textSecondary: '#5A6B7F',  // Captions, timestamps, muted text
-  textInverse: '#FFFFFF',    // Text on dark backgrounds
-  textLink: '#028FD6',       // Links, tappable text
+  textPrimary: '#1F2419',     // Near-black with warm undertone
+  textSecondary: '#6B6557',   // Warm gray — captions, muted
+  textInverse: '#FFFEFB',     // Off-white on dark
+  textLink: '#B8893E',        // Brass
 
   // Borders & Dividers
-  border: '#E2E8F0',         // Card borders, dividers
-  borderLight: '#EDF2F7',    // Subtle dividers
+  border: '#E5DFD0',          // Warm border
+  borderLight: '#EFEAD9',     // Subtle warm divider
 
-  // Status
-  error: '#E53E3E',
-  errorLight: '#FED7D7',
-  success: '#38A169',
-  successLight: '#C6F6D5',
-  warning: '#D69E2E',
-  warningLight: '#FEFCBF',
+  // Status (warm-toned)
+  error: '#C44536',           // Warm red
+  errorLight: '#F4D9D5',
+  success: '#5C7A3D',         // Olive-green success
+  successLight: '#DCE5CD',
+  warning: '#C9924A',         // Brass warning
+  warningLight: '#F4E5C8',
 
   // Overlays
-  overlay: 'rgba(1, 24, 56, 0.5)',
-  overlayLight: 'rgba(1, 24, 56, 0.3)',
+  overlay: 'rgba(31, 36, 25, 0.55)',
+  overlayLight: 'rgba(31, 36, 25, 0.3)',
 
   // Tab bar
-  tabBarBackground: '#FAFBFC',
-  tabBarActive: '#028FD6',
-  tabBarInactive: '#A0AEC0',
+  tabBarBackground: '#FFFEFB',
+  tabBarActive: '#3D4F2C',
+  tabBarInactive: '#A89F8B',
 } as const;
 
 export type ColorKey = keyof typeof Colors;

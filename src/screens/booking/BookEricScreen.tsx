@@ -2,44 +2,73 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
   TouchableOpacity,
+  TextInput,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors, Spacing, BorderRadius, Shadows } from '../../constants';
-import { prayersApi } from '../../api/prayers';
+import AuthInput from '../../components/common/AuthInput';
+import { bookingsApi } from '../../api/bookings';
 import { ApiError } from '../../api/client';
+import { ActivityIndicator } from 'react-native';
 
-const MAX_LENGTH = 2000;
-
-export default function PrayerRequestScreen() {
+export default function BookEricScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
 
+  const [name, setName] = useState('');
+  const [church, setChurch] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [date, setDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [location, setLocation] = useState('');
   const [message, setMessage] = useState('');
-  const [focused, setFocused] = useState(false);
+  const [messageFocused, setMessageFocused] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const handleDateChange = (_event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) setDate(selectedDate);
+  };
+
+  const formattedDate = date
+    ? date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : '';
+
   const handleSubmit = async () => {
-    if (message.trim().length < 5) {
+    if (!name.trim() || !church.trim() || !phone.trim() || !email.trim()) {
       Alert.alert(
-        'Please write your prayer request',
-        'Your message should be at least a few words.',
+        'Missing details',
+        'Please fill in your name, church, phone number, and email.',
       );
       return;
     }
     setSubmitting(true);
     try {
-      await prayersApi.submit(message.trim());
+      await bookingsApi.pastor({
+        fullName: name.trim(),
+        church: church.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        programDate: date ? date.toISOString().split('T')[0] : undefined,
+        location: location.trim() || undefined,
+        message: message.trim() || undefined,
+      });
       setSubmitted(true);
     } catch (e) {
       Alert.alert(
@@ -68,12 +97,12 @@ export default function PrayerRequestScreen() {
         </View>
         <View style={styles.successContainer}>
           <View style={styles.successIcon}>
-            <Ionicons name="heart" size={36} color={Colors.accent} />
+            <Ionicons name="checkmark" size={36} color={Colors.success} />
           </View>
-          <Text style={styles.successTitle}>Your prayer is heard</Text>
+          <Text style={styles.successTitle}>Booking submitted</Text>
           <Text style={styles.successMessage}>
-            Thank you for sharing your heart. Our team will be praying with
-            you and believing God for His perfect will.
+            Your booking request for Rev. Ing. Eric Ofori Broni has been
+            received. Our team will review and contact you to confirm.
           </Text>
           <TouchableOpacity
             style={styles.primaryButton}
@@ -102,7 +131,7 @@ export default function PrayerRequestScreen() {
         >
           <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>Prayer Request</Text>
+        <Text style={styles.topTitle}>Book Pastor</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -114,68 +143,128 @@ export default function PrayerRequestScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Header ── */}
         <View style={styles.header}>
-          <Text style={styles.title}>Share your heart</Text>
+          <Text style={styles.title}>Invite Pastor Eric</Text>
           <Text style={styles.subtitle}>
-            We'll stand with you in prayer.
+            For programs, conferences, and church gatherings.
           </Text>
         </View>
 
-        {/* ── Form ── */}
-        <Text style={styles.label}>Your prayer request</Text>
-        <View
-          style={[
-            styles.textAreaWrap,
-            focused && styles.textAreaFocused,
-          ]}
-        >
-          <TextInput
-            style={styles.textArea}
-            placeholder="Write what's on your heart…"
-            placeholderTextColor={Colors.textSecondary}
-            value={message}
-            onChangeText={setMessage}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            multiline
-            numberOfLines={8}
-            textAlignVertical="top"
-            maxLength={MAX_LENGTH}
-          />
-        </View>
-        <Text style={styles.charCount}>
-          {message.length} / {MAX_LENGTH}
-        </Text>
+        <AuthInput
+          label="Your name"
+          placeholder="Your name"
+          value={name}
+          onChangeText={setName}
+          leftIcon="person-outline"
+        />
+        <AuthInput
+          label="Church / organization"
+          placeholder="e.g. Grace Chapel International"
+          value={church}
+          onChangeText={setChurch}
+          leftIcon="business-outline"
+        />
+        <AuthInput
+          label="Phone number"
+          placeholder="0XX XXX XXXX"
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+          leftIcon="call-outline"
+        />
+        <AuthInput
+          label="Email"
+          placeholder="you@example.com"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          leftIcon="mail-outline"
+        />
 
-        {/* ── Privacy note ── */}
-        <View style={styles.privacyCard}>
-          <View style={styles.privacyIcon}>
+        {/* Date picker */}
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>Program date</Text>
+          <TouchableOpacity
+            style={styles.pickerInput}
+            onPress={() => setShowDatePicker(true)}
+            activeOpacity={0.85}
+          >
             <Ionicons
-              name="lock-closed"
-              size={12}
-              color={Colors.accent}
+              name="calendar-outline"
+              size={18}
+              color={Colors.textSecondary}
+              style={styles.pickerLeft}
+            />
+            <Text
+              style={[
+                styles.pickerText,
+                !date && styles.pickerPlaceholder,
+              ]}
+            >
+              {date ? formattedDate : 'Select a date'}
+            </Text>
+            <Ionicons
+              name="chevron-down"
+              size={18}
+              color={Colors.textSecondary}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {showDatePicker && (
+          <DateTimePicker
+            value={date || new Date()}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            minimumDate={new Date()}
+            onChange={handleDateChange}
+          />
+        )}
+
+        <AuthInput
+          label="Location"
+          placeholder="City, venue or address"
+          value={location}
+          onChangeText={setLocation}
+          leftIcon="location-outline"
+        />
+
+        {/* Message */}
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>Message (optional)</Text>
+          <View
+            style={[
+              styles.textAreaWrap,
+              messageFocused && styles.textAreaFocused,
+            ]}
+          >
+            <TextInput
+              style={styles.textArea}
+              placeholder="Additional details about the program"
+              placeholderTextColor={Colors.textSecondary}
+              value={message}
+              onChangeText={setMessage}
+              onFocus={() => setMessageFocused(true)}
+              onBlur={() => setMessageFocused(false)}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
             />
           </View>
-          <Text style={styles.privacyText}>
-            Your prayer is private. Only the prayer team will see it.
-          </Text>
         </View>
 
         <TouchableOpacity
-          style={[
-            styles.primaryButton,
-            (!message.trim() || submitting) && styles.buttonDisabled,
-          ]}
+          style={[styles.primaryButton, submitting && { opacity: 0.7 }]}
           onPress={handleSubmit}
           activeOpacity={0.85}
-          disabled={!message.trim() || submitting}
+          disabled={submitting}
         >
           {submitting ? (
             <ActivityIndicator size="small" color={Colors.textInverse} />
           ) : (
             <>
-              <Text style={styles.primaryButtonText}>Submit prayer request</Text>
+              <Text style={styles.primaryButtonText}>Submit booking</Text>
               <Ionicons
                 name="arrow-forward"
                 size={18}
@@ -194,8 +283,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-
-  // ── Top bar ──
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -219,14 +306,10 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     letterSpacing: 0.1,
   },
-
-  // ── Container ──
   container: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.lg,
   },
-
-  // ── Header ──
   header: {
     marginBottom: Spacing.xl,
   },
@@ -237,16 +320,17 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     letterSpacing: -0.6,
     lineHeight: 36,
-    marginBottom: 6,
   },
   subtitle: {
     fontSize: 14,
     fontWeight: '500',
     color: Colors.textSecondary,
+    marginTop: 4,
   },
-
-  // ── Form ──
-  label: {
+  field: {
+    marginBottom: Spacing.base,
+  },
+  fieldLabel: {
     fontSize: 12,
     fontWeight: '700',
     color: Colors.textPrimary,
@@ -254,12 +338,35 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 8,
   },
+  pickerInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.base,
+    height: 52,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  pickerLeft: {
+    marginRight: Spacing.sm,
+  },
+  pickerText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '500',
+    color: Colors.textPrimary,
+  },
+  pickerPlaceholder: {
+    color: Colors.textSecondary,
+    fontWeight: '400',
+  },
   textAreaWrap: {
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
-    minHeight: 200,
+    minHeight: 110,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -271,49 +378,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     color: Colors.textPrimary,
-    lineHeight: 24,
-    minHeight: 180,
+    lineHeight: 22,
+    minHeight: 80,
   },
-  charCount: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-    textAlign: 'right',
-    marginTop: 6,
-    marginBottom: Spacing.lg,
-    letterSpacing: 0.2,
-  },
-
-  // ── Privacy ──
-  privacyCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.base,
-    backgroundColor: Colors.surfaceBlue,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(184, 137, 62, 0.2)',
-    marginBottom: Spacing.xl,
-  },
-  privacyIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(184, 137, 62, 0.18)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  privacyText: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-    lineHeight: 18,
-  },
-
-  // ── Buttons ──
   primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -322,6 +389,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     paddingVertical: 16,
     borderRadius: BorderRadius.md,
+    marginTop: Spacing.sm,
     ...Shadows.sm,
   },
   primaryButtonText: {
@@ -330,11 +398,6 @@ const styles = StyleSheet.create({
     color: Colors.textInverse,
     letterSpacing: 0.1,
   },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-
-  // ── Success ──
   successContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -345,12 +408,12 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: Colors.surfaceBlue,
+    backgroundColor: Colors.successLight,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.xl,
     borderWidth: 1.5,
-    borderColor: 'rgba(184, 137, 62, 0.25)',
+    borderColor: 'rgba(92, 122, 61, 0.3)',
   },
   successTitle: {
     fontFamily: 'serif',

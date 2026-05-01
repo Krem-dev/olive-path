@@ -11,7 +11,13 @@ import LibraryScreen from '../screens/library/LibraryScreen';
 
 const Tab = createBottomTabNavigator();
 
-const TAB_ICON_MAP: Record<string, { focused: keyof typeof Ionicons.glyphMap; default: keyof typeof Ionicons.glyphMap }> = {
+const TAB_ICON_MAP: Record<
+  string,
+  {
+    focused: keyof typeof Ionicons.glyphMap;
+    default: keyof typeof Ionicons.glyphMap;
+  }
+> = {
   Home: { focused: 'home', default: 'home-outline' },
   Discover: { focused: 'search', default: 'search-outline' },
   'Q&A': { focused: 'chatbubbles', default: 'chatbubbles-outline' },
@@ -27,19 +33,21 @@ export default function TabNavigator() {
         tabBarInactiveTintColor: Colors.tabBarInactive,
         tabBarStyle: {
           backgroundColor: Colors.tabBarBackground,
-          borderTopWidth: 0,
+          borderTopWidth: 1,
+          borderTopColor: Colors.borderLight,
           height: TAB_BAR_HEIGHT,
           paddingBottom: 10,
           paddingTop: 8,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.05,
-          shadowRadius: 8,
-          elevation: 8,
+          shadowOpacity: 0.04,
+          shadowRadius: 6,
+          elevation: 6,
         },
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '600',
+          fontWeight: '700',
+          letterSpacing: 0.1,
         },
         tabBarIcon: ({ focused, color, size }) => {
           const icons = TAB_ICON_MAP[route.name];
@@ -51,10 +59,10 @@ export default function TabNavigator() {
                   style={{
                     position: 'absolute',
                     top: -12,
-                    width: 24,
+                    width: 22,
                     height: 3,
                     borderRadius: 2,
-                    backgroundColor: Colors.tabBarActive,
+                    backgroundColor: Colors.accent,
                   }}
                 />
               )}
