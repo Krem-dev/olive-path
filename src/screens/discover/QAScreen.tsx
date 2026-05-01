@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants';
 import { qaItems } from '../../data/mockData';
 import { QAItem } from '../../types/content';
 
@@ -162,13 +162,14 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: '#FFFFFF',
     marginHorizontal: Spacing.base,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.md,
-    height: 44,
+    height: 48,
     gap: Spacing.sm,
     marginBottom: Spacing.md,
+    ...Shadows.sm,
   },
   searchInput: {
     flex: 1,
@@ -188,13 +189,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: '#FFFFFF',
+    ...Shadows.sm,
   },
   chipActive: {
     backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    ...Shadows.md,
   },
   chipText: {
     fontSize: 13,
@@ -210,10 +210,11 @@ const styles = StyleSheet.create({
   },
   // Q&A Card
   qaCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: '#FFFFFF',
     borderRadius: BorderRadius.lg,
-    padding: Spacing.base,
-    marginBottom: Spacing.sm,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+    ...Shadows.sm,
   },
   qaHeader: {
     flexDirection: 'row',
@@ -233,6 +234,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.accent,
     marginTop: 4,
+    backgroundColor: Colors.surfaceBlue,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    alignSelf: 'flex-start',
+    overflow: 'hidden',
   },
   answerSection: {
     marginTop: Spacing.sm,
@@ -246,7 +253,7 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.textSecondary,
     lineHeight: 22,
-    fontSize: 13,
+    fontSize: 14,
   },
   scriptureRow: {
     flexDirection: 'row',
@@ -255,8 +262,8 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     backgroundColor: Colors.surfaceBlue,
     alignSelf: 'flex-start',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
     borderRadius: BorderRadius.sm,
   },
   scriptureText: {

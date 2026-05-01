@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants';
 import { sermons, motivations } from '../../data/mockData';
 import { Sermon } from '../../types/content';
 import { RootStackParamList } from '../../types';
@@ -203,13 +203,14 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: '#FFFFFF',
     marginHorizontal: Spacing.base,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.md,
-    height: 44,
+    height: 48,
     gap: Spacing.sm,
     marginBottom: Spacing.md,
+    ...Shadows.sm,
   },
   searchInput: {
     flex: 1,
@@ -221,19 +222,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: Spacing.base,
     gap: Spacing.sm,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
   },
   chip: {
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: '#FFFFFF',
+    ...Shadows.sm,
   },
   chipActive: {
     backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    ...Shadows.md,
   },
   chipText: {
     fontSize: 13,
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: Spacing.base,
     gap: Spacing.sm,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
   },
   typeChip: {
     flexDirection: 'row',
@@ -255,11 +255,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: 6,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.surface,
+    backgroundColor: '#FFFFFF',
     gap: 4,
+    ...Shadows.sm,
   },
   typeChipActive: {
     backgroundColor: Colors.accent,
+    ...Shadows.md,
   },
   typeChipText: {
     fontSize: 12,
@@ -279,10 +281,12 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '48%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.lg,
+    ...Shadows.md,
+    overflow: 'hidden',
   },
   thumbWrap: {
-    borderRadius: BorderRadius.md,
-    overflow: 'hidden',
     aspectRatio: 16 / 10,
     backgroundColor: Colors.surface,
   },
@@ -306,6 +310,8 @@ const styles = StyleSheet.create({
   },
   cardInfo: {
     paddingTop: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
   },
   cardTitle: {
     ...Typography.bodyMedium,

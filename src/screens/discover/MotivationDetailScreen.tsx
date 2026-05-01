@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants';
 import { motivations } from '../../data/mockData';
 import { RootStackParamList } from '../../types';
 import { useLibraryStore } from '../../store/libraryStore';
@@ -38,9 +38,10 @@ export default function MotivationDetailScreen() {
   const isDownloaded = downloadedIds.includes(item.id);
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
+    <View style={styles.screen}>
+      {/* Back — floating white circle */}
       <TouchableOpacity
-        style={styles.backBtn}
+        style={[styles.backBtn, { top: insets.top + 8 }]}
         onPress={() => navigation.goBack()}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
@@ -51,7 +52,7 @@ export default function MotivationDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       >
-        <View style={styles.thumbWrap}>
+        <View style={[styles.thumbWrap, { marginTop: insets.top }]}>
           <Image source={{ uri: item.thumbnailUrl }} style={styles.thumb} />
           <View style={styles.overlay}>
             <View style={styles.playCircle}>
@@ -67,7 +68,9 @@ export default function MotivationDetailScreen() {
           </View>
 
           <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.scripture}>{item.scripture}</Text>
+          <View style={styles.scriptureBadge}>
+            <Text style={styles.scripture}>{item.scripture}</Text>
+          </View>
 
           {/* Quick actions */}
           <View style={styles.quickActions}>
@@ -75,11 +78,13 @@ export default function MotivationDetailScreen() {
               style={styles.quickBtn}
               onPress={() => toggleBookmark(item.id)}
             >
-              <Ionicons
-                name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
-                size={20}
-                color={isBookmarked ? Colors.accent : Colors.textSecondary}
-              />
+              <View style={styles.quickIconCircle}>
+                <Ionicons
+                  name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
+                  size={20}
+                  color={isBookmarked ? Colors.accent : Colors.textSecondary}
+                />
+              </View>
               <Text style={[styles.quickText, isBookmarked && { color: Colors.accent }]}>
                 {isBookmarked ? 'Saved' : 'Save'}
               </Text>
@@ -89,11 +94,13 @@ export default function MotivationDetailScreen() {
               style={styles.quickBtn}
               onPress={() => toggleDownload(item.id)}
             >
-              <Ionicons
-                name={isDownloaded ? 'checkmark-circle' : 'download-outline'}
-                size={20}
-                color={isDownloaded ? '#059669' : Colors.textSecondary}
-              />
+              <View style={styles.quickIconCircle}>
+                <Ionicons
+                  name={isDownloaded ? 'checkmark-circle' : 'download-outline'}
+                  size={20}
+                  color={isDownloaded ? '#059669' : Colors.textSecondary}
+                />
+              </View>
               <Text style={[styles.quickText, isDownloaded && { color: '#059669' }]}>
                 {isDownloaded ? 'Downloaded' : 'Download'}
               </Text>
@@ -103,24 +110,28 @@ export default function MotivationDetailScreen() {
               style={styles.quickBtn}
               onPress={() => setShowPlaylistSheet(true)}
             >
-              <Ionicons name="add-circle-outline" size={20} color={Colors.textSecondary} />
+              <View style={styles.quickIconCircle}>
+                <Ionicons name="add-circle-outline" size={20} color={Colors.textSecondary} />
+              </View>
               <Text style={styles.quickText}>Playlist</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.quickBtn}>
-              <Ionicons name="share-social-outline" size={20} color={Colors.textSecondary} />
+              <View style={styles.quickIconCircle}>
+                <Ionicons name="share-social-outline" size={20} color={Colors.textSecondary} />
+              </View>
               <Text style={styles.quickText}>Share</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.divider} />
 
-          <Text style={styles.sectionLabel}>Message</Text>
+          <Text style={styles.sectionLabel}>MESSAGE</Text>
           <Text style={styles.message}>{item.summary}</Text>
 
           <View style={styles.divider} />
 
-          <Text style={styles.sectionLabel}>Speaker</Text>
+          <Text style={styles.sectionLabel}>SPEAKER</Text>
           <Text style={styles.speaker}>Rev. Ing. Eric Ofori Broni</Text>
         </View>
       </ScrollView>
@@ -183,10 +194,21 @@ export default function MotivationDetailScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.background },
-  backBtn: { paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm },
+  backBtn: {
+    position: 'absolute',
+    left: 16,
+    zIndex: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Shadows.md,
+  },
   thumbWrap: {
     aspectRatio: 16 / 9, backgroundColor: Colors.surface,
-    marginHorizontal: Spacing.base, borderRadius: BorderRadius.lg, overflow: 'hidden',
+    marginHorizontal: Spacing.base, borderRadius: 20, overflow: 'hidden',
   },
   thumb: { width: '100%', height: '100%' },
   overlay: {
@@ -194,8 +216,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.25)',
   },
   playCircle: {
-    width: 64, height: 64, borderRadius: 32,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
     justifyContent: 'center', alignItems: 'center', paddingLeft: 4,
   },
   content: { padding: Spacing.base, paddingTop: Spacing.lg },
@@ -206,39 +230,57 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontSize: 11, fontWeight: '700', color: '#D97706' },
   title: { ...Typography.h2, marginBottom: Spacing.xs },
+  scriptureBadge: {
+    backgroundColor: Colors.surfaceBlue,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignSelf: 'flex-start',
+  },
   scripture: { ...Typography.bodyMedium, color: Colors.accent, fontSize: 14 },
   quickActions: {
     flexDirection: 'row', justifyContent: 'space-around',
     marginTop: Spacing.lg, paddingVertical: Spacing.md,
-    backgroundColor: Colors.surface, borderRadius: BorderRadius.lg,
+    backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl,
+    ...Shadows.sm,
   },
   quickBtn: { alignItems: 'center', gap: 4 },
+  quickIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.surfaceBlue,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   quickText: { fontSize: 11, fontWeight: '600', color: Colors.textSecondary },
   divider: { height: 1, backgroundColor: Colors.borderLight, marginVertical: Spacing.lg },
   sectionLabel: {
-    fontSize: 11, fontWeight: '700', color: Colors.textSecondary,
-    textTransform: 'uppercase', letterSpacing: 1, marginBottom: Spacing.sm,
+    ...Typography.overline,
+    marginBottom: Spacing.sm,
   },
   message: { ...Typography.body, color: Colors.textSecondary, lineHeight: 24 },
   speaker: { ...Typography.bodyMedium },
   bottomBar: {
     paddingHorizontal: Spacing.base, paddingTop: Spacing.md,
-    borderTopWidth: 1, borderTopColor: Colors.borderLight, backgroundColor: Colors.background,
+    backgroundColor: '#FFFFFF',
+    ...Shadows.lg,
   },
   listenBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: Colors.accent, borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.accent, borderRadius: BorderRadius.full,
     paddingVertical: Spacing.md, gap: Spacing.sm,
+    ...Shadows.md,
   },
   listenBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   sheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheetContent: {
-    backgroundColor: Colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    backgroundColor: '#FFFFFF', borderTopLeftRadius: 20, borderTopRightRadius: 20,
     padding: Spacing.xl, maxHeight: '50%',
   },
   sheetHandle: {
-    width: 40, height: 4, borderRadius: 2,
-    backgroundColor: Colors.border, alignSelf: 'center', marginBottom: Spacing.lg,
+    width: 48, height: 4, borderRadius: 2,
+    backgroundColor: '#D0D5DD', alignSelf: 'center', marginBottom: Spacing.lg,
   },
   sheetTitle: { ...Typography.h4, marginBottom: Spacing.lg },
   sheetEmpty: { ...Typography.bodySmall, color: Colors.textSecondary, textAlign: 'center', paddingVertical: Spacing.xl },

@@ -17,7 +17,7 @@ export default function AuthNavigator() {
         animation: 'slide_from_right',
       }}
     >
-      <Stack.Screen name="Welcome" component={WelcomeScreen} />
+      {/* <Stack.Screen name="Welcome" component={WelcomeScreen} /> */}
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="SignUp" component={SignUpScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />

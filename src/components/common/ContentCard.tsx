@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants';
 
 interface ContentCardProps {
   title: string;
@@ -58,13 +58,14 @@ export default function ContentCard({
 
 const styles = StyleSheet.create({
   card: {
-    marginRight: Spacing.md,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+    overflow: 'hidden',
+    ...Shadows.md,
   },
   thumbnailContainer: {
-    borderRadius: BorderRadius.md,
-    overflow: 'hidden',
     aspectRatio: 16 / 9,
-    backgroundColor: Colors.surface,
+    backgroundColor: '#E8E8E8',
   },
   thumbnail: {
     width: '100%',
@@ -76,14 +77,14 @@ const styles = StyleSheet.create({
     right: Spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     borderRadius: BorderRadius.sm,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     gap: 3,
   },
   durationText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
     color: '#FFFFFF',
   },
@@ -104,15 +105,17 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   info: {
-    paddingTop: Spacing.sm,
+    paddingTop: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.md,
   },
   title: {
     ...Typography.bodyMedium,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 19,
   },
   subtitle: {
     ...Typography.caption,
-    marginTop: 2,
+    marginTop: 3,
   },
 });

@@ -35,6 +35,7 @@ export type RootStackParamList = {
   PlaylistDetail: { playlistId: string };
   Profile: undefined;
   Notifications: undefined;
+  PrayerRequest: undefined;
 };
 
 export type MainTabParamList = {

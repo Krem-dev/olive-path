@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants';
 import { useAuthStore } from '../../store/authStore';
 import { todaysDevotion, sermons, motivations } from '../../data/mockData';
 import { RootStackParamList } from '../../types';
@@ -47,14 +47,10 @@ export default function HomeScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+      contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
       showsVerticalScrollIndicator={false}
       refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={Colors.accent}
-        />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />
       }
     >
       {/* ── Header ── */}
@@ -67,9 +63,9 @@ export default function HomeScreen() {
           <TouchableOpacity
             onPress={() => navigation.navigate('Notifications')}
             activeOpacity={0.7}
-            style={styles.iconBtn}
+            style={styles.headerIconBtn}
           >
-            <Ionicons name="notifications-outline" size={22} color={Colors.textPrimary} />
+            <Ionicons name="notifications-outline" size={20} color={Colors.textPrimary} />
             <View style={styles.notifBadge} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -85,39 +81,79 @@ export default function HomeScreen() {
       {/* ── Daily Devotion ── */}
       <DevotionCard devotion={todaysDevotion} />
 
-      {/* ── Recent Teachings (horizontal cards) ── */}
-      <SectionHeader title="Recent Teachings"  />
+      {/* ── Featured ── */}
+      <SectionHeader title="Featured" />
       <FlatList
-        data={sermons.slice(0, 5)}
-        keyExtractor={(item) => item.id}
+        data={sermons.slice(0, 4)}
+        keyExtractor={(item) => `feat-${item.id}`}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.carousel}
-        renderItem={({ item }) => (
+        ItemSeparatorComponent={() => <View style={{ width: Spacing.md }} />}
+        renderItem={({ item, index }) => (
           <ContentCard
             title={item.title}
             subtitle={item.scripture}
             thumbnailUrl={item.thumbnailUrl}
             duration={item.duration}
+            tag={index === 0 ? 'New' : undefined}
             width={200}
             onPress={() => handleItemPress(item)}
           />
         )}
       />
 
-      {/* ── Latest Motivations ── */}
-      <SectionHeader title="Motivation"  />
-      {motivations.slice(0, 2).map((item) => (
-        <RecentTeachingRow key={item.id} sermon={item} onPress={() => handleItemPress(item)} />
-      ))}
+      {/* ── Recent Teachings ── */}
+      <SectionHeader title="Recent Teachings" />
+      <FlatList
+        data={sermons.slice(2, 7)}
+        keyExtractor={(item) => `recent-${item.id}`}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.carousel}
+        ItemSeparatorComponent={() => <View style={{ width: Spacing.md }} />}
+        renderItem={({ item }) => (
+          <ContentCard
+            title={item.title}
+            subtitle={item.scripture}
+            thumbnailUrl={item.thumbnailUrl}
+            duration={item.duration}
+            width={180}
+            onPress={() => handleItemPress(item)}
+          />
+        )}
+      />
 
-      <View style={{ height: Spacing.xl }} />
+      {/* ── Popular ── */}
+      <SectionHeader title="Popular" />
+      <FlatList
+        data={[...sermons].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 4)}
+        keyExtractor={(item) => `pop-${item.id}`}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.carousel}
+        ItemSeparatorComponent={() => <View style={{ width: Spacing.md }} />}
+        renderItem={({ item }) => (
+          <ContentCard
+            title={item.title}
+            subtitle={item.scripture}
+            thumbnailUrl={item.thumbnailUrl}
+            duration={item.duration}
+            width={180}
+            onPress={() => handleItemPress(item)}
+          />
+        )}
+      />
 
       {/* ── Prayer CTA ── */}
-      <TouchableOpacity style={styles.ctaCard} activeOpacity={0.8}>
+      <TouchableOpacity
+        style={styles.ctaCard}
+        activeOpacity={0.8}
+        onPress={() => navigation.navigate('PrayerRequest')}
+      >
         <View style={styles.ctaLeft}>
           <View style={styles.ctaIcon}>
-            <Ionicons name="hand-left-outline" size={22} color="#FFFFFF" />
+            <Ionicons name="hand-left-outline" size={22} color={Colors.accent} />
           </View>
           <View style={styles.ctaContent}>
             <Text style={styles.ctaTitle}>Need Prayer?</Text>
@@ -148,8 +184,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xl,
   },
   greeting: {
     ...Typography.bodySmall,
@@ -162,43 +198,52 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.base,
+    gap: Spacing.md,
   },
-  iconBtn: {
-    padding: 6,
+  headerIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Shadows.sm,
   },
   notifBadge: {
     position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    top: 8,
+    right: 8,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
     backgroundColor: '#DC2626',
     borderWidth: 1.5,
-    borderColor: Colors.background,
+    borderColor: '#FFFFFF',
   },
   profileBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.accent,
   },
   carousel: {
-    paddingLeft: Spacing.base,
+    paddingLeft: Spacing.lg,
     paddingRight: Spacing.sm,
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing['2xl'],
   },
   ctaCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: Colors.primary,
-    marginHorizontal: Spacing.base,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.base,
+    marginHorizontal: Spacing.lg,
+    borderRadius: 20,
+    padding: Spacing.lg,
+    ...Shadows.lg,
   },
   ctaLeft: {
     flexDirection: 'row',
@@ -207,10 +252,10 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   ctaIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(2,143,214,0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },

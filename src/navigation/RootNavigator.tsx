@@ -9,6 +9,7 @@ import MotivationDetailScreen from '../screens/discover/MotivationDetailScreen';
 import PlaylistDetailScreen from '../screens/library/PlaylistDetailScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import NotificationsScreen from '../screens/notifications/NotificationsScreen';
+import PrayerRequestScreen from '../screens/prayer/PrayerRequestScreen';
 import SplashScreen from '../screens/SplashScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -52,6 +53,11 @@ export default function RootNavigator() {
         name="Notifications"
         component={NotificationsScreen}
         options={{ animation: 'slide_from_right' }}
+      />
+      <Stack.Screen
+        name="PrayerRequest"
+        component={PrayerRequestScreen}
+        options={{ animation: 'slide_from_bottom' }}
       />
     </Stack.Navigator>
   );

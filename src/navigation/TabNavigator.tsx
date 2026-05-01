@@ -27,11 +27,15 @@ export default function TabNavigator() {
         tabBarInactiveTintColor: Colors.tabBarInactive,
         tabBarStyle: {
           backgroundColor: Colors.tabBarBackground,
-          borderTopColor: Colors.borderLight,
-          borderTopWidth: 1,
+          borderTopWidth: 0,
           height: TAB_BAR_HEIGHT,
-          paddingBottom: 8,
-          paddingTop: 6,
+          paddingBottom: 10,
+          paddingTop: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 8,
+          elevation: 8,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -46,8 +50,8 @@ export default function TabNavigator() {
                 <View
                   style={{
                     position: 'absolute',
-                    top: -10,
-                    width: 20,
+                    top: -12,
+                    width: 24,
                     height: 3,
                     borderRadius: 2,
                     backgroundColor: Colors.tabBarActive,

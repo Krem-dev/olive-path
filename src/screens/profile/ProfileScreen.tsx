@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants';
 import { useAuthStore } from '../../store/authStore';
 
 interface MenuItem {
@@ -19,6 +19,17 @@ interface MenuItem {
   onPress?: () => void;
   color?: string;
   rightText?: string;
+  iconTint?: string;
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 export default function ProfileScreen() {
@@ -31,11 +42,13 @@ export default function ProfileScreen() {
       icon: 'notifications-outline',
       label: 'Notifications',
       rightText: 'On',
+      iconTint: '#E8F4FD',
     },
     {
       icon: 'download-outline',
       label: 'Downloads',
       rightText: 'Wi-Fi only',
+      iconTint: '#D1FAE5',
     },
   ];
 
@@ -44,21 +57,25 @@ export default function ProfileScreen() {
       icon: 'globe-outline',
       label: 'Visit Website',
       onPress: () => Linking.openURL('https://www.olivepath.org'),
+      iconTint: '#E8F4FD',
     },
     {
       icon: 'logo-facebook',
       label: 'Facebook',
       onPress: () => Linking.openURL('https://www.olivepathnetwork.org'),
+      iconTint: '#E8F0FD',
     },
     {
       icon: 'mail-outline',
       label: 'Contact Us',
       onPress: () => Linking.openURL('mailto:ericbroni@olivepath.org'),
+      iconTint: '#FEF3C7',
     },
     {
       icon: 'information-circle-outline',
       label: 'About',
       rightText: 'v1.0.0',
+      iconTint: '#F0F2F5',
     },
   ];
 
@@ -76,11 +93,13 @@ export default function ProfileScreen() {
             onPress={item.onPress}
             activeOpacity={item.onPress ? 0.7 : 1}
           >
-            <Ionicons
-              name={item.icon}
-              size={20}
-              color={item.color || Colors.textSecondary}
-            />
+            <View style={[styles.iconCircle, { backgroundColor: item.iconTint || '#F0F2F5' }]}>
+              <Ionicons
+                name={item.icon}
+                size={18}
+                color={item.color || Colors.textSecondary}
+              />
+            </View>
             <Text style={[styles.menuLabel, item.color ? { color: item.color } : undefined]}>
               {item.label}
             </Text>
@@ -116,6 +135,11 @@ export default function ProfileScreen() {
 
       {/* Header */}
       <View style={styles.header}>
+        <View style={styles.avatarCircle}>
+          <Text style={styles.avatarText}>
+            {getInitials(user?.name || 'Guest')}
+          </Text>
+        </View>
         <Text style={styles.userName}>{user?.name || 'Guest'}</Text>
         <Text style={styles.userEmail}>{user?.email || ''}</Text>
       </View>
@@ -160,7 +184,21 @@ const styles = StyleSheet.create({
   // Header
   header: {
     alignItems: 'center',
-    paddingBottom: Spacing['2xl'],
+    paddingBottom: Spacing['3xl'],
+  },
+  avatarCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  avatarText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   userName: {
     ...Typography.h3,
@@ -188,17 +226,25 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
     overflow: 'hidden',
+    ...Shadows.sm,
   },
   menuRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.base,
     paddingHorizontal: Spacing.base,
     gap: Spacing.md,
   },
   menuRowBorder: {
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderLight,
+  },
+  iconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   menuLabel: {
     ...Typography.bodyMedium,
@@ -226,10 +272,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.base,
+    borderRadius: BorderRadius.xl,
     backgroundColor: '#FEE2E2',
     gap: Spacing.sm,
+    ...Shadows.sm,
   },
   logoutText: {
     fontSize: 15,

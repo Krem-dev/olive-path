@@ -15,7 +15,7 @@ export const FontFamilies = {
 } as const;
 
 export const FontSizes = {
-  xs: 11,
+  xs: 12,
   sm: 13,
   base: 15,
   md: 17,
@@ -119,6 +119,16 @@ export const Typography: Record<string, TextStyle> = {
     color: Colors.textPrimary,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
+  },
+
+  // Overline — section labels, badges
+  overline: {
+    fontFamily: FontFamilies.headingSemiBold,
+    fontSize: 11,
+    lineHeight: 16,
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
   },
 
   // Button text

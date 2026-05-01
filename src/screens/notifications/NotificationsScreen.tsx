@@ -9,7 +9,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants';
 
 interface Notification {
   id: string;
@@ -70,7 +70,12 @@ export default function NotificationsScreen() {
   const navigation = useNavigation();
 
   const renderItem = ({ item }: { item: Notification }) => (
-    <View style={[styles.notifRow, !item.read && styles.notifUnread]}>
+    <View
+      style={[
+        styles.notifRow,
+        !item.read && styles.notifUnread,
+      ]}
+    >
       <View style={[styles.notifIcon, { backgroundColor: item.iconBg }]}>
         <Ionicons name={item.icon} size={18} color={item.iconColor} />
       </View>
@@ -123,6 +128,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
   },
   headerTitle: {
     ...Typography.bodyMedium,
@@ -130,18 +137,22 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: Spacing.base,
+    paddingTop: Spacing.md,
     paddingBottom: 40,
   },
   notifRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: Spacing.md,
+    backgroundColor: '#FFFFFF',
     borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.sm,
+    padding: Spacing.base,
+    marginBottom: Spacing.md,
     gap: Spacing.md,
+    ...Shadows.sm,
   },
   notifUnread: {
-    backgroundColor: Colors.surfaceBlue,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.accent,
   },
   notifIcon: {
     width: 40,

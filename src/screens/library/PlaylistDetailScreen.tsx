@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants';
 import { useLibraryStore } from '../../store/libraryStore';
 import { sermons, motivations } from '../../data/mockData';
 import { RootStackParamList } from '../../types';
@@ -120,14 +120,16 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.md,
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.md,
+    ...Shadows.sm,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
     gap: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
   },
   thumbWrap: {
-    width: 60, height: 40,
-    borderRadius: BorderRadius.sm, overflow: 'hidden',
+    width: 64, height: 44,
+    borderRadius: BorderRadius.md, overflow: 'hidden',
     backgroundColor: Colors.surface,
   },
   thumb: { width: '100%', height: '100%' },

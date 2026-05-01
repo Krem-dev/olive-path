@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants';
 import { useLibraryStore, Playlist } from '../../store/libraryStore';
 import { sermons, motivations } from '../../data/mockData';
 import { Sermon } from '../../types/content';
@@ -118,17 +118,19 @@ export default function LibraryScreen() {
 
   const renderEmpty = (message: string, hint: string) => (
     <View style={styles.empty}>
-      <Ionicons
-        name={
-          activeTab === 'playlists'
-            ? 'list'
-            : activeTab === 'downloads'
-            ? 'download'
-            : 'bookmark'
-        }
-        size={48}
-        color={Colors.border}
-      />
+      <View style={styles.emptyIconCircle}>
+        <Ionicons
+          name={
+            activeTab === 'playlists'
+              ? 'list'
+              : activeTab === 'downloads'
+              ? 'download'
+              : 'bookmark'
+          }
+          size={56}
+          color={Colors.accent}
+        />
+      </View>
       <Text style={styles.emptyText}>{message}</Text>
       <Text style={styles.emptyHint}>{hint}</Text>
       <TouchableOpacity
@@ -281,16 +283,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.sm,
+    paddingVertical: 10,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.surface,
-    gap: 4,
+    backgroundColor: '#FFFFFF',
+    gap: 6,
+    ...Shadows.sm,
   },
   tabActive: {
     backgroundColor: Colors.primary,
+    ...Shadows.md,
   },
   tabText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: Colors.textSecondary,
   },
@@ -300,8 +304,14 @@ const styles = StyleSheet.create({
   createBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.md,
+    marginHorizontal: Spacing.base,
+    marginBottom: Spacing.md,
+    borderWidth: 1.5,
+    borderColor: Colors.accent,
+    borderStyle: 'dashed',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    backgroundColor: 'rgba(2,143,214,0.04)',
     gap: Spacing.sm,
   },
   createBtnText: {
@@ -319,14 +329,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
+    padding: Spacing.base,
+    marginBottom: Spacing.md,
     gap: Spacing.md,
+    ...Shadows.sm,
   },
   playlistIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     backgroundColor: Colors.surfaceBlue,
     justifyContent: 'center',
     alignItems: 'center',
@@ -346,13 +357,17 @@ const styles = StyleSheet.create({
   contentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.sm,
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.md,
+    ...Shadows.sm,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
     gap: Spacing.md,
   },
   rowThumbWrap: {
-    width: 60,
-    height: 40,
-    borderRadius: BorderRadius.sm,
+    width: 64,
+    height: 44,
+    borderRadius: BorderRadius.md,
     overflow: 'hidden',
     backgroundColor: Colors.surface,
   },
@@ -377,8 +392,17 @@ const styles = StyleSheet.create({
     paddingTop: Spacing['5xl'],
     gap: Spacing.md,
   },
+  emptyIconCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: Colors.surfaceBlue,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   emptyText: {
     ...Typography.bodyMedium,
+    fontSize: 16,
     color: Colors.textSecondary,
   },
   emptyHint: {
@@ -390,8 +414,8 @@ const styles = StyleSheet.create({
     marginTop: Spacing.lg,
     backgroundColor: Colors.accent,
     borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing['2xl'],
   },
   emptyBtnText: {
     fontSize: 13,
@@ -406,9 +430,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing['2xl'],
   },
   modalContent: {
-    backgroundColor: Colors.background,
+    backgroundColor: '#FFFFFF',
     borderRadius: BorderRadius.xl,
     padding: Spacing.xl,
+    ...Shadows.lg,
   },
   modalTitle: {
     ...Typography.h3,

@@ -8,7 +8,7 @@ import {
   TextInputProps,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants';
+import { Colors, Spacing, Shadows } from '../../constants';
 
 interface AuthInputProps extends TextInputProps {
   label: string;
@@ -20,6 +20,7 @@ export default function AuthInput({
   label,
   error,
   isPassword,
+  onBlur: onBlurProp,
   ...rest
 }: AuthInputProps) {
   const [focused, setFocused] = useState(false);
@@ -40,7 +41,10 @@ export default function AuthInput({
           placeholderTextColor="#A0AEC0"
           secureTextEntry={isPassword && !showPassword}
           onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onBlur={(e) => {
+            setFocused(false);
+            onBlurProp?.(e);
+          }}
           autoCapitalize={isPassword ? 'none' : undefined}
           {...rest}
         />
@@ -76,17 +80,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderRadius: 12,
     paddingHorizontal: Spacing.base,
-    height: 52,
+    height: 54,
+    ...Shadows.sm,
   },
   inputFocused: {
-    borderColor: Colors.accent,
     borderWidth: 2,
+    borderColor: Colors.accent,
   },
   inputError: {
+    borderWidth: 1,
     borderColor: Colors.error,
   },
   input: {

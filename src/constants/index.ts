@@ -4,6 +4,7 @@ export {
   Spacing,
   BorderRadius,
   IconSize,
+  Shadows,
   SCREEN_PADDING,
   TAB_BAR_HEIGHT,
   MINI_PLAYER_HEIGHT,

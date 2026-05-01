@@ -15,8 +15,9 @@ export const Colors = {
   accentLight: '#3AA8E8',    // Lighter accent
 
   // Backgrounds
-  background: '#FDFDFD',     // Main background
-  surface: '#F5F7FA',        // Card backgrounds, sections
+  background: '#F0F2F5',     // Main background — light gray
+  surface: '#FFFFFF',         // Card backgrounds — white on gray
+  surfaceElevated: '#FFFFFF', // Modals, sheets
   surfaceBlue: '#E8F2FA',    // Soft blue wash — featured cards, tints
 
   // Text
@@ -42,7 +43,7 @@ export const Colors = {
   overlayLight: 'rgba(1, 24, 56, 0.3)',
 
   // Tab bar
-  tabBarBackground: '#FDFDFD',
+  tabBarBackground: '#FAFBFC',
   tabBarActive: '#028FD6',
   tabBarInactive: '#A0AEC0',
 } as const;

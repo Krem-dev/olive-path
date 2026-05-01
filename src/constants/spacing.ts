@@ -3,6 +3,8 @@
  * 4px base grid system
  */
 
+import { Platform } from 'react-native';
+
 export const Spacing = {
   xs: 4,
   sm: 8,
@@ -19,8 +21,8 @@ export const Spacing = {
 export const BorderRadius = {
   sm: 6,
   md: 10,
-  lg: 14,
-  xl: 20,
+  lg: 16,
+  xl: 24,
   full: 9999,
 } as const;
 
@@ -31,17 +33,30 @@ export const IconSize = {
   xl: 32,
 } as const;
 
-/**
- * Standard horizontal padding for screen content
- */
-export const SCREEN_PADDING = Spacing.base;
+export const Shadows = {
+  sm: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  md: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  lg: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 16,
+    elevation: 5,
+  },
+} as const;
 
-/**
- * Bottom tab bar height (used for mini player offset)
- */
-export const TAB_BAR_HEIGHT = 60;
-
-/**
- * Mini player bar height
- */
+export const SCREEN_PADDING = Spacing.lg;
+export const TAB_BAR_HEIGHT = 64;
 export const MINI_PLAYER_HEIGHT = 64;
