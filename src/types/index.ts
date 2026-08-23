@@ -16,7 +16,8 @@ export interface AuthState {
   isHydrating: boolean;
   hasOnboarded: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string) => Promise<void>;
+  signup: (name: string, email: string, password: string) => Promise<string>;
+  verifyOtp: (name: string, email: string, password: string, otp: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   hydrate: () => Promise<void>;
@@ -28,7 +29,10 @@ export type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
   SignUp: undefined;
+  OTP: { name: string; email: string; password: string };
   ForgotPassword: undefined;
+  /** Dev-only Fluent UI component gallery. Registered under __DEV__ only. */
+  FluentGallery: undefined;
 };
 
 export type RootStackParamList = {
@@ -43,6 +47,8 @@ export type RootStackParamList = {
   PrayerRequest: undefined;
   BookCounselling: undefined;
   BookEric: undefined;
+  /** Dev-only Fluent UI component gallery. Registered under __DEV__ only. */
+  FluentGallery: undefined;
 };
 
 export type MainTabParamList = {

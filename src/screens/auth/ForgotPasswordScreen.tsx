@@ -1,18 +1,31 @@
+/**
+ * ForgotPasswordScreen — migrated to Fluent UI.
+ */
+
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants';
+import {
+  Button,
+  Text,
+  useFluentColors,
+  FluentSpacing,
+  FluentCorner,
+} from '../../components/fluent';
+import {
+  ChevronLeft24Regular,
+  MailRead48Regular,
+  Mail24Regular,
+  ArrowRight24Regular,
+} from '../../components/fluent/icons';
 import AuthInput from '../../components/common/AuthInput';
 import { useAuthStore } from '../../store/authStore';
 import { ApiError } from '../../api/client';
@@ -21,6 +34,7 @@ export default function ForgotPasswordScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const forgotPassword = useAuthStore((s) => s.forgotPassword);
+  const colors = useFluentColors();
 
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
@@ -42,9 +56,7 @@ export default function ForgotPasswordScreen() {
       await forgotPassword(email);
       setSent(true);
     } catch (e) {
-      setError(
-        e instanceof ApiError ? e.message : 'Could not send reset link. Try again.',
-      );
+      setError(e instanceof ApiError ? e.message : 'Could not send reset link. Try again.');
     } finally {
       setSubmitting(false);
     }
@@ -52,56 +64,71 @@ export default function ForgotPasswordScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.screen}
+      style={[styles.screen, { backgroundColor: colors.neutralBackground3 as string }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* ── Top bar ── */}
       <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity
+        <Pressable
           onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-          style={styles.backBtn}
           hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          style={({ pressed }) => [
+            styles.backBtn,
+            {
+              backgroundColor: pressed
+                ? (colors.neutralBackground1Pressed as string)
+                : (colors.neutralBackground1 as string),
+              borderColor: colors.neutralStroke1 as string,
+            },
+          ]}
         >
-          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
-        </TouchableOpacity>
+          <ChevronLeft24Regular color={colors.neutralForeground1 as string} />
+        </Pressable>
       </View>
 
       <ScrollView
         contentContainerStyle={[
           styles.container,
-          { paddingBottom: insets.bottom + Spacing.xl },
+          { paddingBottom: insets.bottom + FluentSpacing.xxl },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         {sent ? (
           <View style={styles.sentContainer}>
-            <View style={styles.sentIconWrap}>
-              <Ionicons
-                name="mail-open-outline"
-                size={36}
-                color={Colors.accent}
-              />
-            </View>
-            <Text style={styles.sentTitle}>Check your email</Text>
-            <Text style={styles.sentBody}>
-              We sent a reset link to{' '}
-              <Text style={styles.sentEmail}>{email}</Text>
-            </Text>
-            <TouchableOpacity
-              style={[styles.primaryButton, { marginTop: Spacing.xl }]}
-              onPress={() => navigation.goBack()}
-              activeOpacity={0.85}
+            <View
+              style={[
+                styles.sentIconWrap,
+                { backgroundColor: colors.brandBackground2 as string },
+              ]}
             >
-              <Text style={styles.primaryButtonText}>Back to Sign In</Text>
-            </TouchableOpacity>
+              <MailRead48Regular color={colors.brandForeground1 as string} />
+            </View>
+            <Text variant="title1" style={styles.center}>
+              Check your email
+            </Text>
+            <Text
+              variant="body1"
+              style={styles.center}
+              color={colors.neutralForeground2 as string}
+            >
+              {`We sent a reset link to ${email}`}
+            </Text>
+            <Button
+              appearance="primary"
+              size="large"
+              onClick={() => navigation.goBack()}
+              width="100%"
+            >
+              Back to Sign In
+            </Button>
           </View>
         ) : (
           <>
-            <View style={styles.header}>
-              <Text style={styles.title}>Reset password</Text>
-            </View>
+            <Text variant="title1" style={styles.title}>
+              Reset password
+            </Text>
 
             <View style={styles.form}>
               <AuthInput
@@ -113,41 +140,31 @@ export default function ForgotPasswordScreen() {
                   if (error) setError('');
                 }}
                 error={error}
+                assistiveText="We'll send a reset link to this address."
                 keyboardType="email-address"
                 autoComplete="email"
                 autoCapitalize="none"
-                leftIcon="mail-outline"
+                leftIcon={Mail24Regular}
               />
 
-              <TouchableOpacity
-                style={[styles.primaryButton, submitting && styles.buttonDisabled]}
-                onPress={handleSubmit}
-                activeOpacity={0.85}
+              <Button
+                appearance="primary"
+                size="large"
+                loading={submitting}
                 disabled={submitting}
+                onClick={handleSubmit}
+                icon={{ svgSource: { src: ArrowRight24Regular } }}
+                iconPosition="after"
+                width="100%"
               >
-                {submitting ? (
-                  <ActivityIndicator size="small" color={Colors.textInverse} />
-                ) : (
-                  <>
-                    <Text style={styles.primaryButtonText}>Send reset link</Text>
-                    <Ionicons
-                      name="arrow-forward"
-                      size={18}
-                      color={Colors.textInverse}
-                    />
-                  </>
-                )}
-              </TouchableOpacity>
+                Send reset link
+              </Button>
             </View>
 
             <View style={styles.footer}>
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                activeOpacity={0.7}
-                hitSlop={6}
-              >
-                <Text style={styles.footerLink}>Back to Sign In</Text>
-              </TouchableOpacity>
+              <Button appearance="subtle" size="small" onClick={() => navigation.goBack()}>
+                Back to Sign In
+              </Button>
             </View>
           </>
         )}
@@ -159,123 +176,50 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
-
-  // ── Top bar ──
   topBar: {
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.sm,
+    paddingHorizontal: FluentSpacing.l,
+    paddingBottom: FluentSpacing.s,
   },
   backBtn: {
     width: 40,
     height: 40,
-    borderRadius: BorderRadius.md,
+    borderRadius: FluentCorner.medium,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
-
-  // ── Container ──
   container: {
+    paddingHorizontal: FluentSpacing.l,
     flexGrow: 1,
-    paddingHorizontal: Spacing.lg,
-  },
-
-  // ── Header ──
-  header: {
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.xl,
   },
   title: {
-    fontFamily: 'serif',
-    fontSize: 32,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    letterSpacing: -0.6,
-    lineHeight: 38,
+    marginTop: FluentSpacing.l,
+    marginBottom: FluentSpacing.xxl,
   },
-
-  // ── Form ──
   form: {
-    gap: 0,
+    gap: FluentSpacing.s,
   },
-
-  // ── Buttons ──
-  primaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    borderRadius: BorderRadius.md,
-    marginTop: Spacing.sm,
-    ...Shadows.sm,
+  center: {
+    textAlign: 'center',
   },
-  primaryButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.textInverse,
-    letterSpacing: 0.1,
-  },
-  buttonDisabled: {
-    opacity: 0.65,
-  },
-
-  // ── Footer ──
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: Spacing['2xl'],
-    paddingTop: Spacing.lg,
-  },
-  footerLink: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.accent,
-  },
-
-  // ── Sent state ──
   sentContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: Spacing['3xl'],
-    paddingHorizontal: Spacing.lg,
+    gap: FluentSpacing.m,
+    paddingHorizontal: FluentSpacing.l,
   },
   sentIconWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.surfaceBlue,
+    width: 88,
+    height: 88,
+    borderRadius: FluentCorner.circular,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.xl,
-    borderWidth: 1.5,
-    borderColor: 'rgba(184, 137, 62, 0.25)',
+    marginBottom: FluentSpacing.s,
   },
-  sentTitle: {
-    fontFamily: 'serif',
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    letterSpacing: -0.5,
-    marginBottom: Spacing.md,
-    textAlign: 'center',
-  },
-  sentBody: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: Colors.textSecondary,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-  sentEmail: {
-    fontWeight: '700',
-    color: Colors.accent,
+  footer: {
+    alignItems: 'center',
+    marginTop: FluentSpacing.xxl,
   },
 });

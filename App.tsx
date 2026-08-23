@@ -5,7 +5,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
+import { ThemeProvider } from '@fluentui-react-native/theme';
 import RootNavigator from './src/navigation/RootNavigator';
+import ProgramPopup from './src/components/ui/ProgramPopup';
+import { fluentTheme } from './src/theme/fluent';
 
 // Hide native splash immediately — we use our own custom splash
 SplashScreen.preventAutoHideAsync().then(() => {
@@ -15,12 +18,15 @@ SplashScreen.preventAutoHideAsync().then(() => {
 export default function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
-      <SafeAreaProvider>
-        <NavigationContainer>
-          <StatusBar style="dark" />
-          <RootNavigator />
-        </NavigationContainer>
-      </SafeAreaProvider>
+      <ThemeProvider theme={fluentTheme}>
+        <SafeAreaProvider>
+          <NavigationContainer>
+            <StatusBar style="dark" />
+            <RootNavigator />
+            <ProgramPopup />
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }

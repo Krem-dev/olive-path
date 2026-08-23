@@ -68,6 +68,7 @@ export interface Book {
   authorTitle?: string | null;
   description: string;
   coverUrl: string;
+  pdfUrl?: string | null;
   pages: number;
   price: number;          // 0 = free; major units (e.g. ₵40)
   currency: string;

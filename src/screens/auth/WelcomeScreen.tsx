@@ -1,29 +1,38 @@
 import React, { useRef, useState } from 'react';
 import {
   View,
-  Text,
   Image,
   StyleSheet,
   FlatList,
   Dimensions,
-  TouchableOpacity,
   ViewToken,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants';
+import {
+  Button,
+  Text,
+  useFluentColors,
+  FluentSpacing,
+  FluentCorner,
+} from '../../components/fluent';
+import {
+  LeafTwo48Regular,
+  Headphones48Regular,
+  BookOpen48Regular,
+  ArrowRight24Regular,
+} from '../../components/fluent/icons';
 import { useAuthStore } from '../../store/authStore';
 import { AuthStackParamList } from '../../types';
 
 const { width } = Dimensions.get('window');
 
-type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+type FluentIcon = React.FC<any>;
 
 interface Slide {
   id: string;
-  icon: IoniconName;
+  icon: FluentIcon;
   eyebrow: string;
   title: string;
   subtitle: string;
@@ -32,7 +41,7 @@ interface Slide {
 const SLIDES: Slide[] = [
   {
     id: '1',
-    icon: 'leaf',
+    icon: LeafTwo48Regular,
     eyebrow: 'WELCOME',
     title: 'A path of faith',
     subtitle:
@@ -40,7 +49,7 @@ const SLIDES: Slide[] = [
   },
   {
     id: '2',
-    icon: 'headset-outline',
+    icon: Headphones48Regular,
     eyebrow: 'LISTEN & WATCH',
     title: 'Wherever you are',
     subtitle:
@@ -48,7 +57,7 @@ const SLIDES: Slide[] = [
   },
   {
     id: '3',
-    icon: 'book-outline',
+    icon: BookOpen48Regular,
     eyebrow: 'GROW DAILY',
     title: 'Rooted in Scripture',
     subtitle:
@@ -88,19 +97,33 @@ export default function WelcomeScreen() {
   };
 
   const isLastSlide = activeIndex === SLIDES.length - 1;
+  const colors = useFluentColors();
 
-  const renderSlide = ({ item }: { item: Slide }) => (
+  const renderSlide = ({ item }: { item: Slide }) => {
+    const SlideIcon = item.icon;
+    return (
     <View style={[styles.slide, { width }]}>
       <View style={styles.iconWrap}>
-        <View style={styles.iconRing}>
-          <Ionicons name={item.icon} size={36} color={Colors.accent} />
+        <View style={[styles.iconRing, { backgroundColor: colors.brandBackground2 as string }]}>
+          <SlideIcon color={colors.brandForeground1 as string} />
         </View>
       </View>
-      <Text style={styles.eyebrow}>{item.eyebrow}</Text>
-      <Text style={styles.slideTitle}>{item.title}</Text>
-      <Text style={styles.slideSubtitle}>{item.subtitle}</Text>
+      <Text variant="caption1Strong" color={colors.brandForeground1 as string} style={styles.eyebrow}>
+        {item.eyebrow}
+      </Text>
+      <Text variant="title1" style={styles.center}>
+        {item.title}
+      </Text>
+      <Text
+        variant="body1"
+        color={colors.neutralForeground2 as string}
+        style={styles.center}
+      >
+        {item.subtitle}
+      </Text>
     </View>
-  );
+    );
+  };
 
   return (
     <View
@@ -117,16 +140,12 @@ export default function WelcomeScreen() {
             style={styles.brandLogo}
             resizeMode="contain"
           />
-          <Text style={styles.brandName}>Olive Path</Text>
+          <Text variant="body1Strong">Olive Path</Text>
         </View>
         {!isLastSlide && (
-          <TouchableOpacity
-            onPress={handleSkip}
-            activeOpacity={0.7}
-            hitSlop={10}
-          >
-            <Text style={styles.skipText}>Skip</Text>
-          </TouchableOpacity>
+          <Button appearance="subtle" size="small" onClick={handleSkip}>
+            Skip
+          </Button>
         )}
       </View>
 
@@ -154,6 +173,12 @@ export default function WelcomeScreen() {
             style={[
               styles.dot,
               index === activeIndex ? styles.dotActive : styles.dotInactive,
+              {
+                backgroundColor:
+                  index === activeIndex
+                    ? (colors.brandBackground as string)
+                    : (colors.neutralStroke2 as string),
+              },
             ]}
           />
         ))}
@@ -163,42 +188,37 @@ export default function WelcomeScreen() {
       <View style={styles.bottomSection}>
         {isLastSlide ? (
           <>
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={() => navigation.navigate('SignUp')}
-              activeOpacity={0.85}
+            <Button
+              appearance="primary"
+              size="large"
+              onClick={() => navigation.navigate('SignUp')}
+              icon={{ svgSource: { src: ArrowRight24Regular } }}
+              iconPosition="after"
+              width="100%"
             >
-              <Text style={styles.primaryButtonText}>Get Started</Text>
-              <Ionicons
-                name="arrow-forward"
-                size={18}
-                color={Colors.textInverse}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={() => navigation.navigate('Login')}
-              activeOpacity={0.7}
+              Get Started
+            </Button>
+            <Button
+              appearance="subtle"
+              size="medium"
+              onClick={() => navigation.navigate('Login')}
+              width="100%"
             >
-              <Text style={styles.secondaryButtonText}>
-                I already have an account
-              </Text>
-            </TouchableOpacity>
+              I already have an account
+            </Button>
           </>
         ) : (
           <>
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={handleNext}
-              activeOpacity={0.85}
+            <Button
+              appearance="primary"
+              size="large"
+              onClick={handleNext}
+              icon={{ svgSource: { src: ArrowRight24Regular } }}
+              iconPosition="after"
+              width="100%"
             >
-              <Text style={styles.primaryButtonText}>Continue</Text>
-              <Ionicons
-                name="arrow-forward"
-                size={18}
-                color={Colors.textInverse}
-              />
-            </TouchableOpacity>
+              Continue
+            </Button>
             <View style={styles.secondaryPlaceholder} />
           </>
         )}
@@ -210,145 +230,71 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
-
-  // ── Top bar ──
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
+    paddingHorizontal: FluentSpacing.l,
+    paddingTop: FluentSpacing.m,
+    paddingBottom: FluentSpacing.s,
   },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: FluentSpacing.s,
   },
   brandLogo: {
     width: 28,
     height: 28,
   },
-  brandName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.primary,
-    letterSpacing: -0.2,
-  },
-  skipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-  },
-
-  // ── Slides ──
   slidesWrap: {
     flex: 1,
   },
   slide: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: Spacing['2xl'],
+    justifyContent: 'center',
+    paddingHorizontal: FluentSpacing.xxl,
+    gap: FluentSpacing.s,
   },
   iconWrap: {
-    marginBottom: Spacing['2xl'],
+    marginBottom: FluentSpacing.l,
   },
   iconRing: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: Colors.surface,
+    width: 112,
+    height: 112,
+    borderRadius: FluentCorner.circular,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(184, 137, 62, 0.25)',
-    ...Shadows.sm,
   },
   eyebrow: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.accent,
-    letterSpacing: 1.6,
-    marginBottom: Spacing.md,
+    letterSpacing: 1.2,
   },
-  slideTitle: {
-    fontFamily: 'serif',
-    fontSize: 32,
-    fontWeight: '700',
-    color: Colors.textPrimary,
+  center: {
     textAlign: 'center',
-    letterSpacing: -0.5,
-    lineHeight: 40,
-    marginBottom: Spacing.base,
   },
-  slideSubtitle: {
-    fontSize: 15,
-    lineHeight: 24,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    fontWeight: '400',
-    paddingHorizontal: Spacing.sm,
-  },
-
-  // ── Dots ──
   dotsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: Spacing.lg,
-    gap: 6,
+    gap: FluentSpacing.xs,
+    paddingVertical: FluentSpacing.l,
   },
   dot: {
-    height: 7,
-    borderRadius: 4,
+    height: 8,
+    borderRadius: FluentCorner.circular,
   },
   dotActive: {
-    width: 22,
-    backgroundColor: Colors.accent,
+    width: 24,
   },
   dotInactive: {
-    width: 7,
-    backgroundColor: Colors.border,
+    width: 8,
   },
-
-  // ── Bottom buttons ──
   bottomSection: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.lg,
-    paddingTop: Spacing.sm,
-    gap: Spacing.sm,
-  },
-  primaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    borderRadius: BorderRadius.md,
-    ...Shadows.sm,
-  },
-  primaryButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.textInverse,
-    letterSpacing: 0.1,
-  },
-  secondaryButton: {
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  secondaryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.accent,
+    paddingHorizontal: FluentSpacing.l,
+    paddingBottom: FluentSpacing.l,
+    gap: FluentSpacing.s,
   },
   secondaryPlaceholder: {
-    height: 14 * 2 + 18, // matches secondaryButton height to keep layout stable across slides
+    height: 40,
   },
 });

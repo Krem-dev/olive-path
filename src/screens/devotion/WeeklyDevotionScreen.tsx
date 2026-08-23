@@ -1,17 +1,35 @@
+/**
+ * WeeklyDevotionScreen — migrated to Fluent UI.
+ *
+ * TYPOGRAPHY: the scripture quote and devotion title deliberately keep their
+ * serif face. Fluent's type ramp is built for UI chrome; setting devotional
+ * text in it would make this read like a settings page. Everything else —
+ * chrome, icons, surfaces, colour — is Fluent.
+ */
+
 import React from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
+import { View, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants';
+import {
+  Text,
+  Spinner,
+  FluentCard,
+  useFluentColors,
+  FluentSpacing,
+  FluentCorner,
+  FluentTint,
+} from '../../components/fluent';
+import {
+  ChevronLeft24Regular,
+  ChevronRight20Regular,
+  Bookmark24Regular,
+  Share24Regular,
+  LeafTwo24Regular,
+  Heart24Filled,
+} from '../../components/fluent/icons';
+import { Button } from '../../components/ui';
 import { devotionsApi } from '../../api/devotions';
 import { useFetch } from '../../hooks/useFetch';
 import { RootStackParamList } from '../../types';
@@ -23,19 +41,48 @@ export default function WeeklyDevotionScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
   const route = useRoute<Rt>();
+  const colors = useFluentColors();
   const requestedId = route.params?.devotionId;
 
-  // Fetch the requested devotion (or current if none requested)
   const devotionFetch = useFetch(
-    () =>
-      requestedId
-        ? devotionsApi.byId(requestedId)
-        : devotionsApi.current(),
+    () => (requestedId ? devotionsApi.byId(requestedId) : devotionsApi.current()),
     [requestedId],
   );
 
   // Past devotions list — fetched in parallel; only shown on the "current" view
   const pastFetch = useFetch(() => devotionsApi.list({ limit: 10 }), []);
+
+  const headerBtn = ({ pressed }: { pressed: boolean }) => [
+    styles.headerBtn,
+    pressed && { backgroundColor: colors.neutralBackground1Pressed as string },
+  ];
+
+  const Header = ({ topPad }: { topPad: number }) => (
+    <View style={[styles.header, { paddingTop: topPad }]}>
+      <Pressable
+        onPress={() => navigation.goBack()}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+        style={headerBtn}
+      >
+        <ChevronLeft24Regular color={colors.neutralForeground1 as string} />
+      </Pressable>
+
+      <Text variant="body1Strong" style={styles.headerTitle}>
+        Weekly Devotion
+      </Text>
+
+      <View style={styles.headerActions}>
+        <Pressable hitSlop={6} accessibilityRole="button" accessibilityLabel="Bookmark" style={headerBtn}>
+          <Bookmark24Regular color={colors.neutralForeground1 as string} />
+        </Pressable>
+        <Pressable hitSlop={6} accessibilityRole="button" accessibilityLabel="Share" style={headerBtn}>
+          <Share24Regular color={colors.neutralForeground1 as string} />
+        </Pressable>
+      </View>
+    </View>
+  );
 
   if (devotionFetch.loading) {
     return (
@@ -43,40 +90,37 @@ export default function WeeklyDevotionScreen() {
         style={[
           styles.screen,
           styles.centered,
-          { paddingTop: insets.top },
+          { paddingTop: insets.top, backgroundColor: colors.neutralBackground3 as string },
         ]}
       >
-        <ActivityIndicator color={Colors.accent} />
+        <Spinner />
       </View>
     );
   }
 
   if (devotionFetch.error || !devotionFetch.data) {
     return (
-      <View style={[styles.screen, { paddingTop: insets.top }]}>
-        <View style={[styles.header, { paddingTop: 8 }]}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-            style={styles.headerBtn}
-            hitSlop={8}
+      <View
+        style={[
+          styles.screen,
+          { paddingTop: insets.top, backgroundColor: colors.neutralBackground3 as string },
+        ]}
+      >
+        <Header topPad={8} />
+        <View style={[styles.centered, styles.flex]}>
+          <Text
+            variant="body1"
+            color={colors.neutralForeground2 as string}
+            style={styles.center}
           >
-            <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Weekly Devotion</Text>
-          <View style={{ width: 38 }} />
-        </View>
-        <View style={[styles.centered, { flex: 1 }]}>
-          <Text style={styles.errorText}>
             {devotionFetch.error || 'Devotion not available.'}
           </Text>
-          <TouchableOpacity
-            style={styles.retryBtn}
+          <Button
+            label="Try again"
             onPress={devotionFetch.refetch}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.retryText}>Try again</Text>
-          </TouchableOpacity>
+            variant="outlined"
+            fullWidth={false}
+          />
         </View>
       </View>
     );
@@ -87,170 +131,151 @@ export default function WeeklyDevotionScreen() {
   const isCurrent = !requestedId;
   const dateRange = formatDateRange(devotion.weekStart, devotion.weekEnd);
   const paragraphs = devotion.reflection.split('\n\n');
-  const pastList = (pastFetch.data?.data ?? []).filter(
-    (d) => d.id !== devotion.id,
-  );
+  const pastList = (pastFetch.data?.data ?? []).filter((d) => d.id !== devotion.id);
 
   return (
-    <View style={styles.screen}>
-      {/* ── Custom Header ── */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-          style={styles.headerBtn}
-          hitSlop={8}
-        >
-          <Ionicons
-            name="chevron-back"
-            size={22}
-            color={Colors.textPrimary}
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Weekly Devotion</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            style={styles.headerBtn}
-            hitSlop={6}
-          >
-            <Ionicons
-              name="bookmark-outline"
-              size={20}
-              color={Colors.textPrimary}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            style={styles.headerBtn}
-            hitSlop={6}
-          >
-            <Ionicons
-              name="share-outline"
-              size={20}
-              color={Colors.textPrimary}
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
+    <View style={[styles.screen, { backgroundColor: colors.neutralBackground3 as string }]}>
+      <Header topPad={insets.top + 8} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + FluentSpacing.xxxl }}
       >
         {/* ── Hero ── */}
         <View style={styles.hero}>
           <View style={styles.eyebrowRow}>
-            <View style={styles.eyebrowLine} />
-            <Text style={styles.eyebrowText}>
+            <View style={[styles.eyebrowLine, { backgroundColor: colors.brandStroke1 as string }]} />
+            <Text variant="caption1Strong" color={colors.brandForeground1 as string} style={styles.tracked}>
               {isCurrent ? 'THIS WEEK' : 'PAST DEVOTION'}
             </Text>
-            <View style={styles.eyebrowLine} />
+            <View style={[styles.eyebrowLine, { backgroundColor: colors.brandStroke1 as string }]} />
           </View>
-          <Text style={styles.heroTitle}>{devotion.title}</Text>
-          <Text style={styles.heroDate}>{dateRange}</Text>
+
+          <Text style={[styles.heroTitle, { color: colors.neutralForeground1 as string }]}>
+            {devotion.title}
+          </Text>
+          <Text variant="body2" color={colors.neutralForeground2 as string}>
+            {dateRange}
+          </Text>
         </View>
 
         {/* ── Scripture ── */}
-        <View style={styles.scriptureBlock}>
-          <Ionicons
-            name="leaf"
-            size={16}
-            color={Colors.accent}
-            style={styles.scriptureLeaf}
-          />
-          <Text style={styles.scriptureText}>"{devotion.scripture}"</Text>
-          <View style={styles.scriptureRefRow}>
-            <View style={styles.scriptureRefLine} />
-            <Text style={styles.scriptureRef}>{devotion.scriptureRef}</Text>
-          </View>
+        <View style={styles.gutter}>
+          <FluentCard appearance="filled" size="large">
+            <LeafTwo24Regular
+              color={colors.brandForeground1 as string}
+              width={20}
+              height={20}
+              style={styles.leaf}
+            />
+            <Text style={[styles.scriptureText, { color: colors.neutralForeground1 as string }]}>
+              {`"${devotion.scripture}"`}
+            </Text>
+            <View style={styles.scriptureRefRow}>
+              <View style={[styles.refLine, { backgroundColor: colors.brandStroke1 as string }]} />
+              <Text variant="body2Strong" color={colors.brandForeground1 as string}>
+                {devotion.scriptureRef}
+              </Text>
+            </View>
+          </FluentCard>
         </View>
 
-        {/* ── Encouragement tagline ── */}
-        <View style={styles.encouragementWrap}>
-          <Text style={styles.encouragementText}>
+        {/* ── Encouragement ── */}
+        <View style={[styles.gutter, styles.encouragement]}>
+          <Text variant="body1Strong" style={styles.center}>
             {devotion.encouragement}
           </Text>
         </View>
 
         {/* ── Reflection ── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionEyebrow}>REFLECTION</Text>
-          {paragraphs.map((p, i) => (
-            <Text key={i} style={styles.bodyText}>
-              {p}
+        <View style={[styles.gutter, styles.section]}>
+          <Text variant="caption1Strong" color={colors.brandForeground1 as string} style={styles.tracked}>
+            REFLECTION
+          </Text>
+          {paragraphs.map((para, i) => (
+            <Text
+              key={i}
+              variant="body1"
+              color={colors.neutralForeground1 as string}
+              style={styles.bodyText}
+            >
+              {para}
             </Text>
           ))}
 
-          {/* Pastor attribution */}
           <View style={styles.pastorRow}>
-            <View style={styles.pastorAvatar}>
-              <Text style={styles.pastorInitials}>
+            <View style={[styles.pastorAvatar, { backgroundColor: colors.brandBackground as string }]}>
+              <Text variant="body2Strong" color={colors.neutralForegroundOnColor as string}>
                 {getInitials(devotion.pastor.name)}
               </Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.pastorName}>{devotion.pastor.name}</Text>
-              <Text style={styles.pastorTitle}>{devotion.pastor.title}</Text>
+            <View style={styles.flex}>
+              <Text variant="body1Strong">{devotion.pastor.name}</Text>
+              <Text variant="caption1" color={colors.neutralForeground2 as string}>
+                {devotion.pastor.title}
+              </Text>
             </View>
           </View>
         </View>
 
         {/* ── Prayer ── */}
-        {devotion.prayer && (
-          <View style={styles.prayerCard}>
-            <View style={styles.prayerHeader}>
-              <View style={styles.prayerIconWrap}>
-                <Ionicons name="heart" size={14} color={Colors.accent} />
+        {devotion.prayer ? (
+          <View style={styles.gutter}>
+            <FluentCard appearance="filled-alternative" size="large">
+              <View style={styles.prayerHeader}>
+                <View style={[styles.prayerIcon, { backgroundColor: FluentTint.subtle }]}>
+                  <Heart24Filled color={colors.brandForeground1 as string} width={16} height={16} />
+                </View>
+                <Text variant="caption1Strong" color={colors.brandForeground1 as string} style={styles.tracked}>
+                  A PRAYER FOR YOU
+                </Text>
               </View>
-              <Text style={styles.prayerLabel}>A Prayer For You</Text>
-            </View>
-            <Text style={styles.prayerText}>{devotion.prayer}</Text>
+              <Text style={[styles.prayerText, { color: colors.neutralForeground1 as string }]}>
+                {devotion.prayer}
+              </Text>
+            </FluentCard>
           </View>
-        )}
+        ) : null}
 
-        {/* ── Past Devotions ── */}
-        {isCurrent && pastList.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionEyebrow}>PAST DEVOTIONS</Text>
-            <View style={{ gap: Spacing.md }}>
+        {/* ── Past devotions ── */}
+        {isCurrent && pastList.length > 0 ? (
+          <View style={[styles.gutter, styles.section]}>
+            <Text variant="caption1Strong" color={colors.brandForeground1 as string} style={styles.tracked}>
+              PAST DEVOTIONS
+            </Text>
+            <View style={styles.pastList}>
               {pastList.map((d) => (
-                <TouchableOpacity
+                <FluentCard
                   key={d.id}
-                  style={styles.pastCard}
-                  activeOpacity={0.85}
-                  onPress={() =>
-                    navigation.push('WeeklyDevotion', { devotionId: d.id })
-                  }
+                  appearance="filled"
+                  size="medium"
+                  horizontal
+                  onPress={() => navigation.push('WeeklyDevotion', { devotionId: d.id })}
                 >
-                  <View style={styles.pastDateWrap}>
-                    <Text style={styles.pastDay}>
-                      {new Date(d.weekStart).getDate()}
+                  <View style={[styles.pastDate, { backgroundColor: FluentTint.subtle }]}>
+                    <Text variant="body1Strong" color={colors.brandForeground1 as string}>
+                      {String(new Date(d.weekStart).getDate())}
                     </Text>
-                    <Text style={styles.pastMonth}>
+                    <Text variant="caption1Strong" color={colors.brandForeground1 as string}>
                       {new Date(d.weekStart)
                         .toLocaleDateString('en-US', { month: 'short' })
                         .toUpperCase()}
                     </Text>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.pastTitle} numberOfLines={1}>
+                  <View style={styles.flex}>
+                    <Text variant="body1Strong" numberOfLines={1}>
                       {d.title}
                     </Text>
-                    <Text style={styles.pastScripture} numberOfLines={1}>
+                    <Text variant="caption1" color={colors.neutralForeground2 as string} numberOfLines={1}>
                       {d.scriptureRef}
                     </Text>
                   </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={18}
-                    color={Colors.textSecondary}
-                  />
-                </TouchableOpacity>
+                  <ChevronRight20Regular color={colors.neutralForeground3 as string} />
+                </FluentCard>
               ))}
             </View>
           </View>
-        )}
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -283,300 +308,108 @@ function getInitials(fullName: string): string {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: Colors.background },
+  screen: { flex: 1 },
+  flex: { flex: 1 },
+  gutter: { paddingHorizontal: FluentSpacing.l },
+  center: { textAlign: 'center' },
+  tracked: { letterSpacing: 1.2 },
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
-    gap: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
-  },
-  errorText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-    textAlign: 'center',
-  },
-  retryBtn: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 12,
-    backgroundColor: Colors.primary,
-    borderRadius: BorderRadius.md,
-  },
-  retryText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.textInverse,
+    gap: FluentSpacing.l,
+    paddingHorizontal: FluentSpacing.l,
   },
 
-  // ── Header ──
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.md,
-    backgroundColor: Colors.background,
+    paddingHorizontal: FluentSpacing.l,
+    paddingBottom: FluentSpacing.s,
+    gap: FluentSpacing.s,
   },
   headerBtn: {
     width: 38,
     height: 38,
-    borderRadius: BorderRadius.md,
+    borderRadius: FluentCorner.medium,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    textAlign: 'center',
-    letterSpacing: 0.2,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+  headerTitle: { flex: 1, textAlign: 'center' },
+  headerActions: { flexDirection: 'row', gap: FluentSpacing.xxs },
 
-  // ── Hero ──
   hero: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.xl,
     alignItems: 'center',
+    paddingHorizontal: FluentSpacing.xxl,
+    paddingTop: FluentSpacing.l,
+    paddingBottom: FluentSpacing.xl,
+    gap: FluentSpacing.s,
   },
-  eyebrowRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    marginBottom: Spacing.base,
-  },
-  eyebrowLine: {
-    width: 28,
-    height: 1,
-    backgroundColor: Colors.accent,
-    opacity: 0.6,
-  },
-  eyebrowText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.accent,
-    letterSpacing: 1.6,
-  },
+  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: FluentSpacing.s },
+  eyebrowLine: { width: 28, height: 1, opacity: 0.6 },
+
+  // Serif, deliberately — see the note at the top of this file.
   heroTitle: {
     fontFamily: 'serif',
-    fontSize: 34,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    textAlign: 'center',
-    letterSpacing: -0.6,
+    fontSize: 32,
     lineHeight: 40,
-    marginBottom: Spacing.sm,
-  },
-  heroDate: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-    letterSpacing: 0.3,
-  },
-
-  // ── Scripture block ──
-  scriptureBlock: {
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.xl,
-    paddingVertical: Spacing.xl,
-    paddingHorizontal: Spacing.lg,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    alignItems: 'center',
-    ...Shadows.sm,
-  },
-  scriptureLeaf: {
-    marginBottom: Spacing.md,
-    opacity: 0.85,
+    textAlign: 'center',
   },
   scriptureText: {
     fontFamily: 'serif',
-    fontStyle: 'italic',
     fontSize: 19,
     lineHeight: 32,
-    color: Colors.textPrimary,
+    fontStyle: 'italic',
     textAlign: 'center',
-    marginBottom: Spacing.lg,
-  },
-  scriptureRefRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  scriptureRefLine: {
-    width: 16,
-    height: 1,
-    backgroundColor: Colors.accent,
-  },
-  scriptureRef: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.accent,
-    letterSpacing: 1.2,
-  },
-
-  // ── Encouragement ──
-  encouragementWrap: {
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.xl,
-    paddingHorizontal: Spacing.base,
-  },
-  encouragementText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: Colors.primary,
-    textAlign: 'center',
-    lineHeight: 24,
-    letterSpacing: -0.1,
-  },
-
-  // ── Section ──
-  section: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.xl,
-  },
-  sectionEyebrow: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.accent,
-    letterSpacing: 1.4,
-    marginBottom: Spacing.base,
-  },
-  bodyText: {
-    fontSize: 15,
-    lineHeight: 26,
-    color: Colors.textPrimary,
-    fontWeight: '400',
-    marginBottom: Spacing.base,
-  },
-
-  // ── Pastor attribution ──
-  pastorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    marginTop: Spacing.md,
-    paddingTop: Spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: Colors.borderLight,
-  },
-  pastorAvatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pastorInitials: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.textInverse,
-    letterSpacing: 0.5,
-  },
-  pastorName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: 2,
-  },
-  pastorTitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-  },
-
-  // ── Prayer ──
-  prayerCard: {
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.xl,
-    padding: Spacing.lg,
-    backgroundColor: Colors.surfaceBlue,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(184, 137, 62, 0.18)',
-  },
-  prayerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: Spacing.md,
-  },
-  prayerIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(184, 137, 62, 0.18)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  prayerLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.accent,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
   },
   prayerText: {
     fontFamily: 'serif',
+    fontSize: 16,
+    lineHeight: 28,
     fontStyle: 'italic',
-    fontSize: 15,
-    lineHeight: 26,
-    color: Colors.textPrimary,
   },
 
-  // ── Past devotions list ──
-  pastCard: {
+  leaf: { alignSelf: 'center' },
+  scriptureRefRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.base,
-    padding: Spacing.base,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    ...Shadows.sm,
+    alignSelf: 'center',
+    gap: FluentSpacing.s,
   },
-  pastDateWrap: {
-    width: 50,
-    height: 56,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.surfaceBlue,
+  refLine: { width: 20, height: 1, opacity: 0.6 },
+
+  encouragement: { paddingVertical: FluentSpacing.xl },
+  section: { marginTop: FluentSpacing.l, gap: FluentSpacing.m },
+  bodyText: { lineHeight: 26 },
+
+  pastorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: FluentSpacing.m,
+    marginTop: FluentSpacing.l,
+  },
+  pastorAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: FluentCorner.circular,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  pastDay: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: Colors.primary,
-    lineHeight: 24,
+
+  prayerHeader: { flexDirection: 'row', alignItems: 'center', gap: FluentSpacing.s },
+  prayerIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: FluentCorner.circular,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  pastMonth: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: Colors.accent,
-    letterSpacing: 1,
-    marginTop: 2,
-  },
-  pastTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: 3,
-    letterSpacing: -0.1,
-  },
-  pastScripture: {
-    fontFamily: 'serif',
-    fontStyle: 'italic',
-    fontSize: 12,
-    color: Colors.accent,
-    fontWeight: '500',
+
+  pastList: { gap: FluentSpacing.m },
+  pastDate: {
+    width: 52,
+    height: 52,
+    borderRadius: FluentCorner.large,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
