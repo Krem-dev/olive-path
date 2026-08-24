@@ -40,8 +40,16 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     });
   },
 
-  signup: async (name, email, password) => {
-    const result = await authApi.register({ name, email, password });
+  signup: async (_name, email, _password) => {
+    // Step 1: Send OTP — does NOT create account yet
+    const result = await authApi.register({ name: _name, email, password: _password });
+    // Return the normalized email from backend
+    return result.email;
+  },
+
+  verifyOtp: async (name, email, password, otp) => {
+    // Step 2: Verify OTP and create account
+    const result = await authApi.verifyOtp({ name, email, password, otp });
     await tokenStorage.save(result.token, result.refreshToken, result.user);
     set({
       user: result.user as User,

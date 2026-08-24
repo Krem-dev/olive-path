@@ -1,4 +1,15 @@
+/**
+ * BookReaderScreen — migrated to Fluent UI.
+ *
+ * READING SURFACE: this screen keeps its own reader themes (light / sepia /
+ * dark), font-size steps and serif/sans toggle. Those are reading preferences
+ * the user chooses, not app chrome — overriding them with Fluent's palette
+ * would break the reading experience. Only the accent is aligned to Fluent's
+ * brand so the chrome matches the rest of the app. Icons and spacing are Fluent.
+ */
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { WebView } from 'react-native-webview';
 import {
   View,
   Text,
@@ -21,8 +32,13 @@ import {
   RouteProp,
 } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
-import { Spacing, BorderRadius } from '../../constants';
+import { FluentSpacing, FluentCorner } from '../../components/fluent';
+import {
+  Dismiss24Regular,
+  BookOpen24Regular,
+  Bookmark24Regular,
+  TextFont24Regular,
+} from '../../components/fluent/icons';
 import { booksApi } from '../../api/books';
 import { useFetch } from '../../hooks/useFetch';
 import { Book, BookChapter } from '../../types/content';
@@ -47,34 +63,34 @@ interface ReaderTheme {
 
 const THEMES: Record<ThemeKey, ReaderTheme> = {
   light: {
-    bg: '#FAF7F0',
-    surface: '#FFFEFB',
-    text: '#1F2419',
-    textMuted: '#6B6557',
-    accent: '#B8893E',
-    divider: '#E5DFD0',
-    toolbar: '#FFFEFB',
-    toolbarBorder: '#E5DFD0',
+    bg: '#fefefc',
+    surface: '#FFFFFF',
+    text: '#1C2536',
+    textMuted: '#5A6B7F',
+    accent: '#0F6CBD',
+    divider: '#E2E8F0',
+    toolbar: '#FFFFFF',
+    toolbarBorder: '#E2E8F0',
   },
   sepia: {
-    bg: '#F2EDE0',
-    surface: '#EBE3D1',
-    text: '#3D3528',
-    textMuted: '#7A6E58',
-    accent: '#9A7232',
+    bg: '#F5F0E6',
+    surface: '#EDE7D9',
+    text: '#2C2418',
+    textMuted: '#6B5E4A',
+    accent: '#0F6CBD',
     divider: '#D9CFB5',
-    toolbar: '#EBE3D1',
+    toolbar: '#EDE7D9',
     toolbarBorder: '#D9CFB5',
   },
   dark: {
-    bg: '#1F2419',
-    surface: '#2A2F22',
-    text: '#FAF7F0',
-    textMuted: '#A89F8B',
-    accent: '#D4A85A',
-    divider: '#3A3F2E',
-    toolbar: '#2A2F22',
-    toolbarBorder: '#3A3F2E',
+    bg: '#0A1929',
+    surface: '#112240',
+    text: '#fefefc',
+    textMuted: '#8899AA',
+    accent: '#0F6CBD',
+    divider: '#1A3454',
+    toolbar: '#112240',
+    toolbarBorder: '#1A3454',
   },
 };
 
@@ -215,6 +231,50 @@ export default function BookReaderScreen() {
     );
   }
 
+  // ── PDF Mode ──
+  if (book.pdfUrl) {
+    return (
+      <View style={[styles.screen, { backgroundColor: t.bg }]}>
+        <View
+          style={[
+            styles.topBar,
+            {
+              paddingTop: insets.top + 8,
+              backgroundColor: t.toolbar,
+              borderBottomColor: t.toolbarBorder,
+            },
+          ]}
+        >
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+            style={[
+              styles.iconBtn,
+              { backgroundColor: t.bg, borderColor: t.toolbarBorder },
+            ]}
+            hitSlop={8}
+          >
+            <Dismiss24Regular color={t.text} width={20} height={20} />
+          </TouchableOpacity>
+          <Text style={[styles.pdfTitle, { color: t.text }]} numberOfLines={1}>
+            {book.title}
+          </Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <WebView
+          source={{ uri: `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(book.pdfUrl)}` }}
+          style={{ flex: 1 }}
+          startInLoadingState
+          renderLoading={() => (
+            <View style={[styles.screen, styles.centered, { backgroundColor: t.bg }]}>
+              <ActivityIndicator color={t.accent} />
+            </View>
+          )}
+        />
+      </View>
+    );
+  }
+
   if (chapters.length === 0) {
     return (
       <View style={[styles.screen, { backgroundColor: t.bg }]}>
@@ -238,7 +298,7 @@ export default function BookReaderScreen() {
             ]}
             hitSlop={8}
           >
-            <Ionicons name="close" size={20} color={t.text} />
+            <Dismiss24Regular color={t.text} width={20} height={20} />
           </TouchableOpacity>
         </View>
         <View style={styles.centered}>
@@ -251,7 +311,7 @@ export default function BookReaderScreen() {
               },
             ]}
           >
-            <Ionicons name="book-outline" size={28} color={t.accent} />
+            <BookOpen24Regular color={t.accent} width={28} height={28} />
           </View>
           <Text style={[styles.emptyTitle, { color: t.text }]}>
             Coming soon
@@ -301,7 +361,7 @@ export default function BookReaderScreen() {
           ]}
           hitSlop={8}
         >
-          <Ionicons name="close" size={20} color={t.text} />
+          <Dismiss24Regular color={t.text} width={20} height={20} />
         </TouchableOpacity>
         <View style={styles.topBarTitleWrap}>
           <Text
@@ -326,7 +386,7 @@ export default function BookReaderScreen() {
             ]}
             hitSlop={6}
           >
-            <Ionicons name="bookmark-outline" size={18} color={t.text} />
+            <Bookmark24Regular color={t.text} width={18} height={18} />
           </TouchableOpacity>
           <TouchableOpacity
             activeOpacity={0.7}
@@ -337,7 +397,7 @@ export default function BookReaderScreen() {
             hitSlop={6}
             onPress={() => setShowSettings(true)}
           >
-            <Ionicons name="text" size={18} color={t.text} />
+            <TextFont24Regular color={t.text} width={18} height={18} />
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -347,7 +407,7 @@ export default function BookReaderScreen() {
         contentContainerStyle={{
           paddingTop: insets.top + 70,
           paddingBottom: insets.bottom + 90,
-          paddingHorizontal: Spacing.xl,
+          paddingHorizontal: FluentSpacing.xl,
         }}
         scrollEventThrottle={16}
         onScroll={handleScroll}
@@ -359,7 +419,7 @@ export default function BookReaderScreen() {
             onLayout={(e) => {
               chapterOffsets.current[i] = e.nativeEvent.layout.y;
             }}
-            style={i > 0 ? { marginTop: Spacing['3xl'] } : undefined}
+            style={i > 0 ? { marginTop: FluentSpacing.xxxl } : undefined}
           >
             {i > 0 && (
               <View style={styles.chapterDivider}>
@@ -413,7 +473,7 @@ export default function BookReaderScreen() {
         style={[
           styles.bottomBar,
           {
-            paddingBottom: insets.bottom + Spacing.sm,
+            paddingBottom: insets.bottom + FluentSpacing.s,
             backgroundColor: t.toolbar,
             borderTopColor: t.toolbarBorder,
             opacity: toolbarOpacity,
@@ -464,7 +524,7 @@ export default function BookReaderScreen() {
               {
                 backgroundColor: t.toolbar,
                 borderTopColor: t.toolbarBorder,
-                paddingBottom: insets.bottom + Spacing.lg,
+                paddingBottom: insets.bottom + FluentSpacing.l,
               },
             ]}
           >
@@ -696,21 +756,28 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.md,
+    paddingHorizontal: FluentSpacing.xl,
+    gap: FluentSpacing.m,
   },
   notFoundText: {
     fontSize: 15,
   },
   notFoundBtn: {
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: FluentSpacing.l,
     paddingVertical: 10,
-    borderRadius: BorderRadius.md,
+    borderRadius: FluentCorner.medium,
   },
   notFoundBtnText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#FFFEFB',
+    color: '#fefefc',
+  },
+  pdfTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 15,
+    fontWeight: '600',
+    marginHorizontal: FluentSpacing.s,
   },
   emptyIcon: {
     width: 76,
@@ -718,7 +785,7 @@ const styles = StyleSheet.create({
     borderRadius: 38,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.lg,
+    marginBottom: FluentSpacing.l,
     borderWidth: 1.5,
   },
   emptyTitle: {
@@ -743,14 +810,14 @@ const styles = StyleSheet.create({
     zIndex: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.md,
+    paddingHorizontal: FluentSpacing.l,
+    paddingBottom: FluentSpacing.m,
     borderBottomWidth: 1,
   },
   iconBtn: {
     width: 36,
     height: 36,
-    borderRadius: BorderRadius.md,
+    borderRadius: FluentCorner.medium,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -758,7 +825,7 @@ const styles = StyleSheet.create({
   },
   topBarTitleWrap: {
     flex: 1,
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: FluentSpacing.m,
     alignItems: 'center',
   },
   topBarTitle: {
@@ -790,11 +857,11 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     textAlign: 'center',
     lineHeight: 34,
-    marginBottom: Spacing['2xl'],
+    marginBottom: FluentSpacing.xxl,
   },
   chapterDivider: {
     alignItems: 'center',
-    marginBottom: Spacing['2xl'],
+    marginBottom: FluentSpacing.xxl,
   },
   dividerOrnament: {
     fontSize: 18,
@@ -802,14 +869,14 @@ const styles = StyleSheet.create({
   },
   bodyText: {
     fontWeight: '400',
-    marginBottom: Spacing.base,
+    marginBottom: FluentSpacing.l,
   },
   endFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: Spacing['3xl'],
-    paddingBottom: Spacing.lg,
-    gap: Spacing.md,
+    paddingTop: FluentSpacing.xxxl,
+    paddingBottom: FluentSpacing.l,
+    gap: FluentSpacing.m,
   },
   endLine: {
     flex: 1,
@@ -827,14 +894,14 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
+    paddingHorizontal: FluentSpacing.l,
+    paddingTop: FluentSpacing.m,
     borderTopWidth: 1,
   },
   progressRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    gap: FluentSpacing.m,
   },
   progressTrack: {
     flex: 1,
@@ -860,10 +927,10 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
+    paddingHorizontal: FluentSpacing.l,
+    paddingTop: FluentSpacing.m,
+    borderTopLeftRadius: FluentCorner.xxLarge,
+    borderTopRightRadius: FluentCorner.xxLarge,
     borderTopWidth: 1,
   },
   sheetHandle: {
@@ -871,17 +938,17 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     alignSelf: 'center',
-    marginBottom: Spacing.lg,
+    marginBottom: FluentSpacing.l,
   },
   sheetTitle: {
     fontFamily: 'serif',
     fontSize: 22,
     fontWeight: '700',
     letterSpacing: -0.4,
-    marginBottom: Spacing.lg,
+    marginBottom: FluentSpacing.l,
   },
   settingRow: {
-    marginBottom: Spacing.lg,
+    marginBottom: FluentSpacing.l,
   },
   settingLabel: {
     fontSize: 11,
@@ -895,7 +962,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: BorderRadius.md,
+    borderRadius: FluentCorner.medium,
     height: 52,
     overflow: 'hidden',
   },
@@ -932,14 +999,14 @@ const styles = StyleSheet.create({
   segmented: {
     flexDirection: 'row',
     borderWidth: 1,
-    borderRadius: BorderRadius.md,
+    borderRadius: FluentCorner.medium,
     padding: 4,
     gap: 4,
   },
   familyPill: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: BorderRadius.sm + 2,
+    borderRadius: FluentCorner.small + 2,
     alignItems: 'center',
   },
   familyPillText: {
@@ -949,12 +1016,12 @@ const styles = StyleSheet.create({
   // Theme chips
   themeRow: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    gap: FluentSpacing.s,
   },
   themeChip: {
     flex: 1,
-    paddingVertical: Spacing.base,
-    borderRadius: BorderRadius.md,
+    paddingVertical: FluentSpacing.l,
+    borderRadius: FluentCorner.medium,
     alignItems: 'center',
     gap: 6,
   },
@@ -970,14 +1037,14 @@ const styles = StyleSheet.create({
 
   doneBtn: {
     paddingVertical: 14,
-    borderRadius: BorderRadius.md,
+    borderRadius: FluentCorner.medium,
     alignItems: 'center',
-    marginTop: Spacing.md,
+    marginTop: FluentSpacing.m,
   },
   doneBtnText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFFEFB',
+    color: '#fefefc',
     letterSpacing: 0.1,
   },
 });

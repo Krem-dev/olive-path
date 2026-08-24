@@ -1,126 +1,105 @@
-import React, { useState } from 'react';
-import {
-  View,
-  TextInput,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  TextInputProps,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, BorderRadius } from '../../constants';
+/**
+ * AuthInput — the app's form field, built on Fluent's real `Input`.
+ *
+ * Keeps the original API (label / error / isPassword / leftIcon) so screens
+ * read the same, but the control itself is now Microsoft's Fluent Input:
+ * Fluent's focus ring, error styling, assistive text and icon slots.
+ *
+ * Fluent takes icons as `{ svgSource: { src: Component } }`, so `leftIcon`
+ * accepts one of our generated Fluent icon components rather than an
+ * Ionicons name string.
+ */
 
-interface AuthInputProps extends TextInputProps {
+import React, { useState } from 'react';
+import { View, StyleSheet } from 'react-native';
+import type { TextInputProps } from 'react-native';
+import { Input, useFluentColors, FluentSpacing } from '../fluent';
+import { Eye20Regular, EyeOff20Regular } from '../fluent/icons';
+
+type FluentIcon = React.FC<any>;
+
+interface AuthInputProps {
   label: string;
+  value?: string;
+  onChangeText?: (text: string) => void;
+  placeholder?: string;
   error?: string;
+  /** Adds the show/hide toggle and masks the text. */
   isPassword?: boolean;
-  leftIcon?: React.ComponentProps<typeof Ionicons>['name'];
+  /** A Fluent icon component, e.g. `Mail24Regular`. */
+  leftIcon?: FluentIcon;
+  /** Helper copy under the field. Hidden while an error is showing. */
+  assistiveText?: string;
+  onBlur?: () => void;
+  keyboardType?: TextInputProps['keyboardType'];
+  autoCapitalize?: TextInputProps['autoCapitalize'];
+  autoComplete?: TextInputProps['autoComplete'];
+  textContentType?: TextInputProps['textContentType'];
+  editable?: boolean;
+  maxLength?: number;
+  testID?: string;
 }
 
 export default function AuthInput({
   label,
+  value,
+  onChangeText,
+  placeholder,
   error,
-  isPassword,
+  isPassword = false,
   leftIcon,
-  onBlur: onBlurProp,
-  ...rest
+  assistiveText,
+  onBlur,
+  keyboardType,
+  autoCapitalize,
+  autoComplete,
+  textContentType,
+  editable = true,
+  maxLength,
+  testID,
 }: AuthInputProps) {
-  const [focused, setFocused] = useState(false);
+  const colors = useFluentColors();
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <View style={styles.wrapper}>
-      <Text style={styles.label}>{label}</Text>
-      <View
-        style={[
-          styles.inputContainer,
-          focused && !error ? styles.inputFocused : undefined,
-          error ? styles.inputError : undefined,
-        ]}
-      >
-        {leftIcon && (
-          <Ionicons
-            name={leftIcon}
-            size={18}
-            color={focused ? Colors.accent : Colors.textSecondary}
-            style={styles.leftIcon}
-          />
-        )}
-        <TextInput
-          style={styles.input}
-          placeholderTextColor={Colors.textSecondary}
-          secureTextEntry={isPassword && !showPassword}
-          onFocus={() => setFocused(true)}
-          onBlur={(e) => {
-            setFocused(false);
-            onBlurProp?.(e);
-          }}
-          autoCapitalize={isPassword ? 'none' : undefined}
-          {...rest}
-        />
-        {isPassword && (
-          <TouchableOpacity
-            onPress={() => setShowPassword(!showPassword)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons
-              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-              size={19}
-              color={Colors.textSecondary}
-            />
-          </TouchableOpacity>
-        )}
-      </View>
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+    <View style={styles.wrapper} testID={testID}>
+      <Input
+        label={label}
+        value={value}
+        onChange={onChangeText}
+        onBlur={onBlur}
+        placeholder={placeholder}
+        error={error}
+        // Fluent hides assistiveText when an error is present, so passing both is safe.
+        assistiveText={error ? undefined : assistiveText}
+        type={keyboardType}
+        defaultIcon={leftIcon ? { svgSource: { src: leftIcon } } : undefined}
+        // `accessoryIcon: null` suppresses Fluent's default clear (X) button.
+        accessoryIcon={
+          isPassword
+            ? { svgSource: { src: showPassword ? EyeOff20Regular : Eye20Regular } }
+            : null
+        }
+        accessoryButtonOnPress={isPassword ? () => setShowPassword((s) => !s) : undefined}
+        accessoryIconAccessibilityLabel={
+          isPassword ? (showPassword ? 'Hide password' : 'Show password') : undefined
+        }
+        accessoryIconColor={colors.neutralForeground3 as string}
+        textInputProps={{
+          secureTextEntry: isPassword && !showPassword,
+          autoCapitalize: autoCapitalize ?? (isPassword ? 'none' : undefined),
+          autoComplete,
+          textContentType,
+          editable,
+          maxLength,
+        }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: Spacing.base,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: 8,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.base,
-    height: 52,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  inputFocused: {
-    borderColor: Colors.accent,
-    borderWidth: 1.5,
-  },
-  inputError: {
-    borderWidth: 1.5,
-    borderColor: Colors.error,
-  },
-  leftIcon: {
-    marginRight: Spacing.sm,
-  },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    color: Colors.textPrimary,
-    height: '100%',
-    fontWeight: '500',
-  },
-  errorText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: Colors.error,
-    marginTop: 6,
-    marginLeft: 2,
+    marginBottom: FluentSpacing.l,
   },
 });

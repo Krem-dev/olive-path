@@ -16,6 +16,7 @@ import WeeklyDevotionScreen from '../screens/devotion/WeeklyDevotionScreen';
 import BookDetailScreen from '../screens/library/BookDetailScreen';
 import BookReaderScreen from '../screens/library/BookReaderScreen';
 import SplashScreen from '../screens/SplashScreen';
+import FluentGalleryScreen from '../screens/dev/FluentGalleryScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -101,6 +102,14 @@ export default function RootNavigator() {
         component={BookEricScreen}
         options={{ animation: 'slide_from_bottom' }}
       />
+      {/* Fluent component gallery — dev builds only, stripped from release. */}
+      {__DEV__ && (
+        <Stack.Screen
+          name="FluentGallery"
+          component={FluentGalleryScreen}
+          options={{ animation: 'slide_from_right' }}
+        />
+      )}
     </Stack.Navigator>
   );
 }

@@ -1,38 +1,40 @@
+/**
+ * NotificationsScreen — migrated to Fluent UI.
+ *
+ * Rows are FluentCards with a tinted Fluent icon per notification type; the
+ * All / Unread switch uses Fluent Chips.
+ */
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
+import { View, FlatList, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants';
+import {
+  Text,
+  Spinner,
+  FluentCard,
+  useFluentColors,
+  FluentSpacing,
+  FluentCorner,
+  FluentTint,
+} from '../../components/fluent';
+import {
+  Mic24Regular,
+  LeafTwo24Regular,
+  Heart24Regular,
+  Sparkle24Regular,
+  AlertOff24Regular,
+  CheckmarkCircle24Regular,
+} from '../../components/fluent/icons';
+import { TopBar, EmptyState, FilterPills } from '../../components/ui';
 import { notificationsApi, ApiNotification } from '../../api/notifications';
 
-type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
-type Tint = 'olive' | 'brass';
+type FluentIcon = React.FC<any>;
 
-const TINT_BG: Record<Tint, string> = {
-  olive: 'rgba(61, 79, 44, 0.10)',
-  brass: 'rgba(184, 137, 62, 0.13)',
-};
-const TINT_FG: Record<Tint, string> = {
-  olive: Colors.primary,
-  brass: Colors.accent,
-};
-
-const TYPE_PRESET: Record<
-  ApiNotification['type'],
-  { icon: IoniconName; tint: Tint }
-> = {
-  new_teaching: { icon: 'mic-outline', tint: 'brass' },
-  devotion: { icon: 'leaf-outline', tint: 'olive' },
-  prayer: { icon: 'heart-outline', tint: 'brass' },
-  general: { icon: 'sparkles-outline', tint: 'olive' },
+const TYPE_ICON: Record<ApiNotification['type'], FluentIcon> = {
+  new_teaching: Mic24Regular,
+  devotion: LeafTwo24Regular,
+  prayer: Heart24Regular,
+  general: Sparkle24Regular,
 };
 
 interface NotificationView {
@@ -41,53 +43,51 @@ interface NotificationView {
   message: string;
   time: string;
   read: boolean;
-  icon: IoniconName;
-  tint: Tint;
+  icon: FluentIcon;
 }
 
 function relativeTime(iso: string): string {
-  const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (seconds < 60) return 'Just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  const weeks = Math.floor(days / 7);
-  if (weeks < 5) return `${weeks}w ago`;
-  return new Date(iso).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return 'Just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  const w = Math.floor(d / 7);
+  if (w < 5) return `${w}w ago`;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function toView(n: ApiNotification): NotificationView {
-  const preset = TYPE_PRESET[n.type] || TYPE_PRESET.general;
   return {
     id: n.id,
     title: n.title,
     message: n.message,
     time: relativeTime(n.createdAt),
     read: n.isRead,
-    icon: preset.icon,
-    tint: preset.tint,
+    icon: TYPE_ICON[n.type] || TYPE_ICON.general,
   };
 }
 
 const PAGE_SIZE = 5;
 type Filter = 'all' | 'unread';
 
+const FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'unread', label: 'Unread' },
+];
+
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
+  const colors = useFluentColors();
+
   const [filter, setFilter] = useState<Filter>('all');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<NotificationView[]>([]);
-  const [error, setError] = useState<string | null>(null);
 
-  // Initial load + mark all visible notifications as read on mount
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -95,33 +95,24 @@ export default function NotificationsScreen() {
         const list = await notificationsApi.list();
         if (!alive) return;
         setItems(list.map(toView));
-        // Mark all as read on viewing the screen
-        const hasUnread = list.some((n) => !n.isRead);
-        if (hasUnread) {
+        if (list.some((n) => !n.isRead)) {
           notificationsApi.markAllRead().catch(() => {});
           setTimeout(() => {
-            if (alive)
-              setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+            if (alive) setItems((prev) => prev.map((n) => ({ ...n, read: true })));
           }, 800);
         }
-      } catch (e) {
-        if (alive) setError(e instanceof Error ? e.message : 'Failed to load');
-      }
+      } catch {}
     })();
     return () => {
       alive = false;
     };
   }, []);
 
-  const filtered = useMemo(() => {
-    if (filter === 'unread') return items.filter((n) => !n.read);
-    return items;
-  }, [filter, items]);
-
-  const displayed = useMemo(
-    () => filtered.slice(0, page * PAGE_SIZE),
-    [filtered, page],
+  const filtered = useMemo(
+    () => (filter === 'unread' ? items.filter((n) => !n.read) : items),
+    [filter, items],
   );
+  const displayed = useMemo(() => filtered.slice(0, page * PAGE_SIZE), [filtered, page]);
   const hasMore = displayed.length < filtered.length;
 
   const loadMore = useCallback(() => {
@@ -133,327 +124,107 @@ export default function NotificationsScreen() {
     }, 350);
   }, [hasMore, loading]);
 
-  const unreadCount = items.filter((n) => !n.read).length;
-
-  const renderItem = ({ item }: { item: NotificationView }) => (
-    <TouchableOpacity style={styles.notifCard} activeOpacity={0.85}>
-      <View
-        style={[
-          styles.notifIcon,
-          { backgroundColor: TINT_BG[item.tint] },
-        ]}
-      >
-        <Ionicons name={item.icon} size={18} color={TINT_FG[item.tint]} />
-      </View>
-      <View style={styles.notifContent}>
-        <View style={styles.notifHeader}>
-          <Text
-            style={[
-              styles.notifTitle,
-              !item.read && styles.notifTitleUnread,
-            ]}
-            numberOfLines={1}
-          >
-            {item.title}
-          </Text>
-          {!item.read && <View style={styles.unreadDot} />}
+  const renderItem = ({ item }: { item: NotificationView }) => {
+    const Icon = item.icon;
+    return (
+      <FluentCard appearance="filled" size="large" horizontal onPress={() => {}}>
+        <View style={[s.iconBox, { backgroundColor: FluentTint.subtle }]}>
+          <Icon color={colors.brandForeground1 as string} />
         </View>
-        <Text style={styles.notifMessage} numberOfLines={2}>
-          {item.message}
-        </Text>
-        <Text style={styles.notifTime}>{item.time}</Text>
-      </View>
-    </TouchableOpacity>
-  );
+
+        <View style={s.flex}>
+          <View style={s.titleRow}>
+            <Text
+              variant={item.read ? 'body1' : 'body1Strong'}
+              numberOfLines={1}
+              style={s.flex}
+            >
+              {item.title}
+            </Text>
+            {!item.read && (
+              <View style={[s.dot, { backgroundColor: colors.brandBackground as string }]} />
+            )}
+          </View>
+
+          <Text
+            variant="body2"
+            color={colors.neutralForeground2 as string}
+            numberOfLines={2}
+            style={s.message}
+          >
+            {item.message}
+          </Text>
+
+          <Text
+            variant="caption1"
+            color={colors.neutralForeground3 as string}
+            style={s.time}
+          >
+            {item.time.toUpperCase()}
+          </Text>
+        </View>
+      </FluentCard>
+    );
+  };
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
-      {/* ── Top bar ── */}
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-          style={styles.backBtn}
-          hitSlop={8}
-        >
-          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.topTitle}>Notifications</Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <View style={[s.screen, { backgroundColor: colors.neutralBackground3 as string }]}>
+      <TopBar title="Notifications" />
 
-      {/* ── Filter segmented ── */}
-      <View style={styles.segmented}>
-        {(['all', 'unread'] as Filter[]).map((key) => {
-          const active = filter === key;
-          const label = key === 'all' ? 'All' : 'Unread';
-          const count =
-            key === 'all' ? items.length : unreadCount;
-          return (
-            <TouchableOpacity
-              key={key}
-              style={[styles.segment, active && styles.segmentActive]}
-              onPress={() => {
-                setFilter(key);
-                setPage(1);
-              }}
-              activeOpacity={0.85}
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  active && styles.segmentTextActive,
-                ]}
-              >
-                {label}
-              </Text>
-              <View
-                style={[
-                  styles.countPill,
-                  active && styles.countPillActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.countPillText,
-                    active && styles.countPillTextActive,
-                  ]}
-                >
-                  {count}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+      <View style={s.filters}>
+        <FilterPills
+          options={FILTERS}
+          activeKey={filter}
+          onSelect={(k) => {
+            setFilter(k as Filter);
+            setPage(1);
+          }}
+        />
       </View>
 
       <FlatList
         data={displayed}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={{
+          paddingHorizontal: FluentSpacing.l,
+          paddingBottom: insets.bottom + FluentSpacing.xxxl,
+        }}
         showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        ItemSeparatorComponent={() => <View style={s.gap} />}
         onEndReached={loadMore}
         onEndReachedThreshold={0.4}
-        ListFooterComponent={
-          loading ? (
-            <View style={styles.loader}>
-              <ActivityIndicator size="small" color={Colors.accent} />
-            </View>
-          ) : null
-        }
+        ListFooterComponent={loading ? <Spinner style={s.footer} /> : null}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <View style={styles.emptyIconWrap}>
-              <Ionicons
-                name={
-                  filter === 'unread'
-                    ? 'checkmark-done-outline'
-                    : 'notifications-off-outline'
-                }
-                size={28}
-                color={Colors.accent}
-              />
-            </View>
-            <Text style={styles.emptyTitle}>
-              {filter === 'unread'
-                ? "You're all caught up"
-                : 'No notifications yet'}
-            </Text>
-            <Text style={styles.emptySub}>
-              {filter === 'unread'
-                ? 'Nothing unread. We\'ll let you know when there\'s something new.'
-                : "We'll notify you when new content is available."}
-            </Text>
-          </View>
+          <EmptyState
+            icon={filter === 'unread' ? CheckmarkCircle24Regular : AlertOff24Regular}
+            title={filter === 'unread' ? "You're all caught up" : 'No notifications yet'}
+          />
         }
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-
-  // ── Top bar ──
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.md,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  topTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    letterSpacing: 0.1,
-  },
-
-  // ── Segmented control ──
-  segmented: {
-    flexDirection: 'row',
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-    padding: 4,
-    backgroundColor: Colors.surfaceBlue,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  segment: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: BorderRadius.sm + 2,
-  },
-  segmentActive: {
-    backgroundColor: Colors.surface,
-    ...Shadows.sm,
-  },
-  segmentText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-    letterSpacing: 0.1,
-  },
-  segmentTextActive: {
-    color: Colors.primary,
-    fontWeight: '700',
-  },
-  countPill: {
-    paddingHorizontal: 7,
-    paddingVertical: 1,
-    borderRadius: BorderRadius.full,
-    backgroundColor: 'rgba(31, 36, 25, 0.08)',
-    minWidth: 22,
-    alignItems: 'center',
-  },
-  countPillActive: {
-    backgroundColor: 'rgba(184, 137, 62, 0.15)',
-  },
-  countPillText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-  },
-  countPillTextActive: {
-    color: Colors.accent,
-  },
-
-  // ── List ──
-  list: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: 40,
-  },
-  notifCard: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    padding: Spacing.base,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    ...Shadows.sm,
-  },
-  notifIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.md,
+const s = StyleSheet.create({
+  screen: { flex: 1 },
+  flex: { flex: 1 },
+  filters: { marginBottom: FluentSpacing.m },
+  iconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: FluentCorner.xxLarge,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  notifContent: {
-    flex: 1,
-  },
-  notifHeader: {
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: FluentSpacing.s,
   },
-  notifTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    flex: 1,
-    letterSpacing: -0.1,
-  },
-  notifTitleUnread: {
-    fontWeight: '700',
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.accent,
-  },
-  notifMessage: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: Colors.textSecondary,
-    marginTop: 3,
-    lineHeight: 18,
-  },
-  notifTime: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-    marginTop: 6,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-  loader: {
-    paddingVertical: Spacing.xl,
-    alignItems: 'center',
-  },
-
-  // ── Empty ──
-  empty: {
-    alignItems: 'center',
-    paddingTop: Spacing['4xl'],
-    paddingHorizontal: Spacing.xl,
-  },
-  emptyIconWrap: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: Colors.surfaceBlue,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.lg,
-    borderWidth: 1.5,
-    borderColor: 'rgba(184, 137, 62, 0.25)',
-  },
-  emptyTitle: {
-    fontFamily: 'serif',
-    fontSize: 22,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-  emptySub: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
+  dot: { width: 8, height: 8, borderRadius: FluentCorner.circular },
+  message: { marginTop: 2, lineHeight: 18 },
+  time: { marginTop: FluentSpacing.xs, letterSpacing: 0.3 },
+  gap: { height: FluentSpacing.s },
+  footer: { paddingVertical: FluentSpacing.l },
 });

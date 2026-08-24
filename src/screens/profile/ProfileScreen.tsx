@@ -1,324 +1,232 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  Linking,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants';
-import { useAuthStore } from '../../store/authStore';
+/**
+ * ProfileScreen — migrated to Fluent UI.
+ *
+ * fluent-migration-exempt: keeps Ionicons for brand logos only.
+ *
+ * BRAND LOGOS: Fluent System Icons contains no third-party brand marks, so the
+ * Facebook / Instagram / YouTube rows keep their Ionicons logos. Substituting
+ * generic Fluent glyphs would make the social links unrecognisable. Every other
+ * icon on this screen is Fluent.
+ */
 
+import React from 'react';
+import { View, ScrollView, StyleSheet, Pressable, Linking, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import {
+  Text,
+  useFluentColors,
+  FluentSpacing,
+  FluentCorner,
+  FluentTint,
+} from '../../components/fluent';
+import {
+  Globe24Regular,
+  Mail24Regular,
+  Info24Regular,
+  ChevronRight20Regular,
+  SignOut24Regular,
+} from '../../components/fluent/icons';
+import { TopBar, Button, Card } from '../../components/ui';
+import { useAuthStore } from '../../store/authStore';
+import { authApi } from '../../api/auth';
+
+type FluentIcon = React.FC<any>;
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
-type Tint = 'olive' | 'brass';
-
 interface MenuItem {
-  icon: IoniconName;
+  /** A Fluent icon, or a brand mark Fluent does not provide. */
+  icon?: FluentIcon;
+  brandIcon?: IoniconName;
   label: string;
   onPress?: () => void;
   rightText?: string;
-  tint: Tint;
 }
+
+const MENU_ITEMS: MenuItem[] = [
+  {
+    icon: Globe24Regular,
+    label: 'Visit website',
+    onPress: () => Linking.openURL('https://www.olivepathnetwork.org'),
+  },
+  {
+    brandIcon: 'logo-facebook',
+    label: 'Facebook',
+    onPress: () => Linking.openURL('https://www.facebook.com/share/18ctrkC9mV/'),
+  },
+  {
+    brandIcon: 'logo-instagram',
+    label: 'Instagram',
+    onPress: () => Linking.openURL('https://www.instagram.com/olivepathnetwork'),
+  },
+  {
+    brandIcon: 'logo-youtube',
+    label: 'YouTube',
+    onPress: () => Linking.openURL('https://youtube.com/@olivepathnetwork'),
+  },
+  {
+    icon: Mail24Regular,
+    label: 'Contact us',
+    onPress: () => Linking.openURL('mailto:ericbroni@olivepathnetwork.org'),
+  },
+  {
+    icon: Info24Regular,
+    label: 'App version',
+    rightText: 'v1.0.0',
+  },
+];
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
   const { user, logout } = useAuthStore();
+  const colors = useFluentColors();
 
-  const aboutItems: MenuItem[] = [
-    {
-      icon: 'globe-outline',
-      label: 'Visit website',
-      onPress: () => Linking.openURL('https://www.olivepathnetwork.org'),
-      tint: 'brass',
-    },
-    {
-      icon: 'logo-facebook',
-      label: 'Facebook',
-      onPress: () =>
-        Linking.openURL('https://www.facebook.com/share/18ctrkC9mV/'),
-      tint: 'olive',
-    },
-    {
-      icon: 'logo-instagram',
-      label: 'Instagram',
-      onPress: () =>
-        Linking.openURL('https://www.instagram.com/olivepathnetwork'),
-      tint: 'brass',
-    },
-    {
-      icon: 'logo-youtube',
-      label: 'YouTube',
-      onPress: () =>
-        Linking.openURL('https://youtube.com/@olivepathnetwork'),
-      tint: 'olive',
-    },
-    {
-      icon: 'mail-outline',
-      label: 'Contact us',
-      onPress: () =>
-        Linking.openURL('mailto:ericbroni@olivepathnetwork.org'),
-      tint: 'brass',
-    },
-    {
-      icon: 'information-circle-outline',
-      label: 'App version',
-      rightText: 'v1.0.0',
-      tint: 'olive',
-    },
-  ];
-
-  const renderSection = (title: string, items: MenuItem[]) => (
-    <View style={styles.section}>
-      <Text style={styles.sectionEyebrow}>{title}</Text>
-      <View style={styles.sectionCard}>
-        {items.map((item, index) => {
-          const tintBg =
-            item.tint === 'olive'
-              ? 'rgba(61, 79, 44, 0.10)'
-              : 'rgba(184, 137, 62, 0.13)';
-          const tintFg =
-            item.tint === 'olive' ? Colors.primary : Colors.accent;
-          return (
-            <TouchableOpacity
-              key={item.label}
-              style={[
-                styles.menuRow,
-                index < items.length - 1 && styles.menuRowBorder,
-              ]}
-              onPress={item.onPress}
-              activeOpacity={item.onPress ? 0.7 : 1}
-              disabled={!item.onPress && !item.rightText}
-            >
-              <View
-                style={[styles.iconCircle, { backgroundColor: tintBg }]}
-              >
-                <Ionicons name={item.icon} size={18} color={tintFg} />
-              </View>
-              <Text style={styles.menuLabel}>{item.label}</Text>
-              {item.rightText ? (
-                <Text style={styles.menuRight}>{item.rightText}</Text>
-              ) : null}
-              {item.onPress ? (
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color={Colors.textSecondary}
-                />
-              ) : null}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all your data including prayer requests, bookmarks, purchases, and bookings. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await authApi.deleteAccount();
+              await logout();
+              Alert.alert(
+                'Account deleted',
+                'Your account and data have been permanently removed.',
+              );
+            } catch {
+              Alert.alert('Failed', 'Could not delete account. Please try again.');
+            }
+          },
+        },
+      ],
+    );
+  };
 
   return (
-    <View style={styles.screen}>
-      {/* ── Top bar ── */}
-      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-          style={styles.backBtn}
-          hitSlop={8}
-        >
-          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.topTitle}>Profile</Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <View style={[styles.screen, { backgroundColor: colors.neutralBackground3 as string }]}>
+      <TopBar title="Profile" />
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + FluentSpacing.xxxl }}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── User card ── */}
-        <View style={styles.userCard}>
-          <Text style={styles.userName}>{user?.name || 'Friend'}</Text>
+        <View style={styles.userInfo}>
+          <Text variant="title1">{user?.name || 'Friend'}</Text>
           {user?.email ? (
-            <Text style={styles.userEmail}>{user.email}</Text>
+            <Text variant="body2" color={colors.neutralForeground2 as string}>
+              {user.email}
+            </Text>
           ) : null}
         </View>
 
-        {/* ── About ── */}
-        {renderSection('ABOUT OLIVE PATH', aboutItems)}
+        <View style={styles.cardWrap}>
+          <Card padded={false}>
+            {MENU_ITEMS.map((item, index) => {
+              const Icon = item.icon;
+              return (
+                <Pressable
+                  key={item.label}
+                  onPress={item.onPress}
+                  disabled={!item.onPress}
+                  accessibilityRole={item.onPress ? 'button' : undefined}
+                  accessibilityLabel={item.label}
+                  style={({ pressed }) => [
+                    styles.row,
+                    index < MENU_ITEMS.length - 1 && {
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                      borderBottomColor: colors.neutralStroke2 as string,
+                    },
+                    pressed &&
+                      item.onPress && {
+                        backgroundColor: colors.neutralBackground1Pressed as string,
+                      },
+                  ]}
+                >
+                  <View style={[styles.iconBox, { backgroundColor: FluentTint.subtle }]}>
+                    {Icon ? (
+                      <Icon color={colors.brandForeground1 as string} />
+                    ) : (
+                      <Ionicons
+                        name={item.brandIcon!}
+                        size={18}
+                        color={colors.brandForeground1 as string}
+                      />
+                    )}
+                  </View>
 
-        {/* ── Mission card ── */}
-        <View style={styles.missionCard}>
-          <Ionicons name="leaf" size={14} color={Colors.accent} />
-          <Text style={styles.missionText}>
-            EBroni Global Media — making Christ known. All teachings by Rev.
-            Ing. Eric Ofori Broni.
-          </Text>
+                  <Text variant="body1Strong" style={styles.rowLabel}>
+                    {item.label}
+                  </Text>
+
+                  {item.rightText ? (
+                    <Text variant="caption1" color={colors.neutralForeground2 as string}>
+                      {item.rightText}
+                    </Text>
+                  ) : null}
+
+                  {item.onPress ? (
+                    <ChevronRight20Regular color={colors.neutralForeground3 as string} />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </Card>
         </View>
 
-        {/* ── Logout ── */}
-        <TouchableOpacity
-          style={styles.logoutBtn}
-          onPress={logout}
-          activeOpacity={0.85}
+        <View style={styles.logoutWrap}>
+          <Button label="Log out" onPress={logout} variant="danger" icon={SignOut24Regular} />
+        </View>
+
+        <Pressable
+          onPress={handleDeleteAccount}
+          accessibilityRole="button"
+          style={styles.deleteBtn}
         >
-          <Ionicons
-            name="log-out-outline"
-            size={18}
-            color={Colors.error}
-          />
-          <Text style={styles.logoutText}>Log out</Text>
-        </TouchableOpacity>
+          <Text variant="body2" color={colors.dangerForeground1 as string}>
+            Delete my account
+          </Text>
+        </Pressable>
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: Colors.background,
+  screen: { flex: 1 },
+  userInfo: {
+    alignItems: 'center',
+    paddingTop: FluentSpacing.l,
+    paddingBottom: FluentSpacing.xl,
+    gap: FluentSpacing.xxs,
   },
-
-  // ── Top bar ──
-  topBar: {
+  cardWrap: {
+    paddingHorizontal: FluentSpacing.l,
+    marginBottom: FluentSpacing.xl,
+  },
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.md,
+    paddingVertical: FluentSpacing.m,
+    paddingHorizontal: FluentSpacing.l,
+    gap: FluentSpacing.m,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  topTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    letterSpacing: 0.1,
-  },
-
-  // ── User card ──
-  userCard: {
-    alignItems: 'center',
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.xl,
-  },
-  userName: {
-    fontFamily: 'serif',
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    letterSpacing: -0.5,
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-  },
-
-  // ── Section ──
-  section: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  sectionEyebrow: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: Colors.accent,
-    letterSpacing: 1.4,
-    marginBottom: 10,
-    paddingHorizontal: Spacing.xs,
-  },
-  sectionCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    ...Shadows.sm,
-  },
-  menuRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: Spacing.base,
-    gap: Spacing.md,
-  },
-  menuRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-  },
-  iconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: BorderRadius.md,
+  iconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: FluentCorner.large,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  menuLabel: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    letterSpacing: 0.1,
-  },
-  menuRight: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-
-  // ── Mission card ──
-  missionCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.sm,
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    backgroundColor: Colors.surfaceBlue,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(184, 137, 62, 0.2)',
-  },
-  missionText: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-    lineHeight: 18,
-    letterSpacing: 0.1,
-  },
-
-  // ── Logout ──
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginHorizontal: Spacing.lg,
-    paddingVertical: 14,
-    backgroundColor: Colors.errorLight,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(196, 69, 54, 0.25)',
-  },
-  logoutText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.error,
-    letterSpacing: 0.1,
+  rowLabel: { flex: 1 },
+  logoutWrap: { paddingHorizontal: FluentSpacing.l },
+  deleteBtn: {
+    alignSelf: 'center',
+    marginTop: FluentSpacing.xl,
+    paddingVertical: FluentSpacing.s,
   },
 });

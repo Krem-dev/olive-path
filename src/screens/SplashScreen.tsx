@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import {
   View,
-  Text,
   Image,
   StyleSheet,
   StatusBar,
@@ -13,13 +12,14 @@ import Animated, {
   withDelay,
   Easing,
 } from 'react-native-reanimated';
-import { Colors, Spacing } from '../constants';
+import { Text, useFluentColors, FluentSpacing } from '../components/fluent';
 
 interface SplashScreenProps {
   onFinish: () => void;
 }
 
 export default function SplashScreen({ onFinish }: SplashScreenProps) {
+  const colors = useFluentColors();
   const logoOpacity = useSharedValue(0);
   const logoScale = useSharedValue(0.85);
   const wordOpacity = useSharedValue(0);
@@ -51,7 +51,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
   }));
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.neutralBackground1 as string }]}>
       <StatusBar
         translucent
         backgroundColor="transparent"
@@ -67,9 +67,19 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
         </Animated.View>
         <Animated.View style={[styles.wordWrap, wordAnimatedStyle]}>
           <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.tagline}>EBRONI GLOBAL MEDIA</Text>
-            <View style={styles.dividerLine} />
+            <View
+              style={[styles.dividerLine, { backgroundColor: colors.brandForeground1 as string }]}
+            />
+            <Text
+              variant="caption1Strong"
+              color={colors.brandForeground1 as string}
+              style={styles.tagline}
+            >
+              EBRONI GLOBAL MEDIA
+            </Text>
+            <View
+              style={[styles.dividerLine, { backgroundColor: colors.brandForeground1 as string }]}
+            />
           </View>
         </Animated.View>
       </View>
@@ -80,7 +90,6 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   center: {
     flex: 1,
@@ -88,7 +97,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoWrap: {
-    marginBottom: Spacing.xl,
+    marginBottom: FluentSpacing.xl,
   },
   logo: {
     width: 180,
@@ -100,18 +109,14 @@ const styles = StyleSheet.create({
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    gap: FluentSpacing.m,
   },
   dividerLine: {
     width: 28,
     height: 1,
-    backgroundColor: Colors.accent,
     opacity: 0.55,
   },
   tagline: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: Colors.accent,
     letterSpacing: 1.8,
   },
 });

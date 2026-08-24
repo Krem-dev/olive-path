@@ -1,22 +1,20 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   TextInput,
   StyleSheet,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants';
+import { Text, useFluentColors, FluentSpacing, FluentCorner } from '../../components/fluent';
+import { TopBar, Button, SuccessState } from '../../components/ui';
 import { prayersApi } from '../../api/prayers';
 import { ApiError } from '../../api/client';
+import { ArrowRight24Regular, Dismiss24Regular, Heart24Filled } from '../../components/fluent/icons';
 
 const MAX_LENGTH = 2000;
 
@@ -26,6 +24,7 @@ export default function PrayerRequestScreen() {
 
   const [message, setMessage] = useState('');
   const [focused, setFocused] = useState(false);
+  const colors = useFluentColors();
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -54,136 +53,79 @@ export default function PrayerRequestScreen() {
   if (submitted) {
     return (
       <View style={styles.screen}>
-        <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
-          <View style={{ width: 40 }} />
-          <View style={{ flex: 1 }} />
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-            style={styles.backBtn}
-            hitSlop={8}
-          >
-            <Ionicons name="close" size={20} color={Colors.textPrimary} />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.successContainer}>
-          <View style={styles.successIcon}>
-            <Ionicons name="heart" size={36} color={Colors.accent} />
-          </View>
-          <Text style={styles.successTitle}>Your prayer is heard</Text>
-          <Text style={styles.successMessage}>
-            Thank you for sharing your heart. Our team will be praying with
-            you and believing God for His perfect will.
-          </Text>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.primaryButtonText}>Back to home</Text>
-          </TouchableOpacity>
-        </View>
+        <TopBar title="Prayer Request" backIcon={Dismiss24Regular} />
+        <SuccessState
+          icon={Heart24Filled}
+          title="Prayer submitted"
+          message="Thank you for sharing. Our team will be praying with you and believing God for His perfect will."
+          buttonLabel="Back to home"
+          onPress={() => navigation.goBack()}
+        />
       </View>
     );
   }
 
   return (
     <KeyboardAvoidingView
-      style={styles.screen}
+      style={[styles.screen, { backgroundColor: colors.neutralBackground3 as string }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* ── Top bar ── */}
-      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-          style={styles.backBtn}
-          hitSlop={8}
-        >
-          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.topTitle}>Prayer Request</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <TopBar title="Prayer Request" />
 
       <ScrollView
         contentContainerStyle={[
           styles.container,
-          { paddingBottom: insets.bottom + Spacing.xl },
+          { paddingBottom: insets.bottom + FluentSpacing.xl },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Header ── */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Share your heart</Text>
-          <Text style={styles.subtitle}>
-            We'll stand with you in prayer.
+        <View style={styles.field}>
+          <Text variant="body1Strong" style={styles.fieldLabel}>
+            Your prayer request
           </Text>
-        </View>
-
-        {/* ── Form ── */}
-        <Text style={styles.label}>Your prayer request</Text>
-        <View
-          style={[
-            styles.textAreaWrap,
-            focused && styles.textAreaFocused,
-          ]}
-        >
-          <TextInput
-            style={styles.textArea}
-            placeholder="Write what's on your heart…"
-            placeholderTextColor={Colors.textSecondary}
-            value={message}
-            onChangeText={setMessage}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            multiline
-            numberOfLines={8}
-            textAlignVertical="top"
-            maxLength={MAX_LENGTH}
-          />
-        </View>
-        <Text style={styles.charCount}>
-          {message.length} / {MAX_LENGTH}
-        </Text>
-
-        {/* ── Privacy note ── */}
-        <View style={styles.privacyCard}>
-          <View style={styles.privacyIcon}>
-            <Ionicons
-              name="lock-closed"
-              size={12}
-              color={Colors.accent}
+          <View
+            style={[
+              styles.textAreaWrap,
+              {
+                backgroundColor: colors.neutralBackground1 as string,
+                borderColor: focused
+                  ? (colors.brandStroke1 as string)
+                  : (colors.neutralStroke1 as string),
+              },
+            ]}
+          >
+            <TextInput
+              style={[styles.textArea, { color: colors.neutralForeground1 as string }]}
+              placeholder="Write what's on your heart..."
+              placeholderTextColor={colors.neutralForeground3 as string}
+              value={message}
+              onChangeText={setMessage}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              multiline
+              numberOfLines={8}
+              textAlignVertical="top"
+              maxLength={MAX_LENGTH}
             />
           </View>
-          <Text style={styles.privacyText}>
-            Your prayer is private. Only the prayer team will see it.
+          <Text
+            variant="caption1"
+            color={colors.neutralForeground3 as string}
+            style={styles.charCount}
+          >
+            {`${message.length} / ${MAX_LENGTH}`}
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={[
-            styles.primaryButton,
-            (!message.trim() || submitting) && styles.buttonDisabled,
-          ]}
+        <Button
+          label="Submit prayer request"
           onPress={handleSubmit}
-          activeOpacity={0.85}
-          disabled={!message.trim() || submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator size="small" color={Colors.textInverse} />
-          ) : (
-            <>
-              <Text style={styles.primaryButtonText}>Submit prayer request</Text>
-              <Ionicons
-                name="arrow-forward"
-                size={18}
-                color={Colors.textInverse}
-              />
-            </>
-          )}
-        </TouchableOpacity>
+          loading={submitting}
+          disabled={!message.trim()}
+          iconRight={ArrowRight24Regular}
+          size="lg"
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -192,181 +134,30 @@ export default function PrayerRequestScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
-
-  // ── Top bar ──
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.md,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  topTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    letterSpacing: 0.1,
-  },
-
-  // ── Container ──
   container: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
+    paddingHorizontal: FluentSpacing.l,
+    paddingTop: FluentSpacing.l,
   },
-
-  // ── Header ──
-  header: {
-    marginBottom: Spacing.xl,
+  field: {
+    marginBottom: FluentSpacing.l,
   },
-  title: {
-    fontFamily: 'serif',
-    fontSize: 30,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    letterSpacing: -0.6,
-    lineHeight: 36,
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-  },
-
-  // ── Form ──
-  label: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-    marginBottom: 8,
+  fieldLabel: {
+    marginBottom: FluentSpacing.s,
   },
   textAreaWrap: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    minHeight: 200,
+    borderRadius: FluentCorner.medium,
+    paddingHorizontal: FluentSpacing.l,
+    paddingVertical: FluentSpacing.m,
     borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  textAreaFocused: {
-    borderColor: Colors.accent,
-    borderWidth: 1.5,
   },
   textArea: {
+    minHeight: 160,
     fontSize: 15,
-    fontWeight: '500',
-    color: Colors.textPrimary,
-    lineHeight: 24,
-    minHeight: 180,
+    lineHeight: 22,
   },
   charCount: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.textSecondary,
     textAlign: 'right',
-    marginTop: 6,
-    marginBottom: Spacing.lg,
-    letterSpacing: 0.2,
-  },
-
-  // ── Privacy ──
-  privacyCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.base,
-    backgroundColor: Colors.surfaceBlue,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(184, 137, 62, 0.2)',
-    marginBottom: Spacing.xl,
-  },
-  privacyIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(184, 137, 62, 0.18)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  privacyText: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-    lineHeight: 18,
-  },
-
-  // ── Buttons ──
-  primaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.primary,
-    paddingVertical: 16,
-    borderRadius: BorderRadius.md,
-    ...Shadows.sm,
-  },
-  primaryButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.textInverse,
-    letterSpacing: 0.1,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-
-  // ── Success ──
-  successContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: Spacing['2xl'],
-  },
-  successIcon: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: Colors.surfaceBlue,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
-    borderWidth: 1.5,
-    borderColor: 'rgba(184, 137, 62, 0.25)',
-  },
-  successTitle: {
-    fontFamily: 'serif',
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    letterSpacing: -0.5,
-    textAlign: 'center',
-    marginBottom: Spacing.md,
-  },
-  successMessage: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: Colors.textSecondary,
-    lineHeight: 22,
-    textAlign: 'center',
-    marginBottom: Spacing.xl,
+    marginTop: FluentSpacing.xs,
   },
 });

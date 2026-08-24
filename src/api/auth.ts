@@ -12,7 +12,13 @@ export interface AuthResponse {
 
 export const authApi = {
   register: (input: { name: string; email: string; password: string }) =>
-    api.post<AuthResponse>('/auth/register', input, { noAuth: true }),
+    api.post<{ message: string; email: string }>('/auth/register', input, { noAuth: true }),
+
+  verifyOtp: (input: { name: string; email: string; password: string; otp: string }) =>
+    api.post<AuthResponse>('/auth/verify-otp', input, { noAuth: true }),
+
+  resendOtp: (input: { email: string }) =>
+    api.post<{ message: string }>('/auth/resend-otp', input, { noAuth: true }),
 
   login: (input: { email: string; password: string }) =>
     api.post<AuthResponse>('/auth/login', input, { noAuth: true }),
@@ -30,4 +36,6 @@ export const authApi = {
     }),
 
   me: () => api.get<StoredUser>('/auth/me'),
+
+  deleteAccount: () => api.delete<{ message: string }>('/auth/account'),
 };

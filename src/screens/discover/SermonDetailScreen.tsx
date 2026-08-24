@@ -1,46 +1,56 @@
+/**
+ * SermonDetailScreen — migrated to Fluent UI.
+ */
+
 import React from 'react';
-import {
-  View,
-  Text,
-  Image,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Image, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import {
-  useNavigation,
-  useRoute,
-  RouteProp,
-} from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, BorderRadius, Shadows } from '../../constants';
+  Text,
+  Spinner,
+  FluentCard,
+  useFluentColors,
+  FluentSpacing,
+  FluentCorner,
+  FluentTint,
+} from '../../components/fluent';
+import {
+  ChevronLeft24Regular,
+  ShareAndroid24Regular,
+  Clock16Regular,
+  LeafTwo16Regular,
+  Video24Filled,
+  Headphones24Filled,
+  BookOpen24Filled,
+  Bookmark24Regular,
+  Bookmark24Filled,
+  ArrowDownload24Regular,
+  CheckmarkCircle24Filled,
+} from '../../components/fluent/icons';
+import { Button } from '../../components/ui';
 import { sermonsApi } from '../../api/sermons';
 import { useFetch } from '../../hooks/useFetch';
 import { RootStackParamList } from '../../types';
 import { useLibraryStore } from '../../store/libraryStore';
 
-type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+type FluentIcon = React.FC<any>;
 type SermonDetailRoute = RouteProp<RootStackParamList, 'SermonDetail'>;
 
 const TYPE_META: Record<
   string,
-  { icon: IoniconName; label: string; primaryAction: string }
+  { icon: FluentIcon; label: string; primaryAction: string }
 > = {
-  video: { icon: 'videocam', label: 'Video', primaryAction: 'Watch sermon' },
-  audio: { icon: 'headset', label: 'Audio', primaryAction: 'Listen sermon' },
-  reading: {
-    icon: 'book',
-    label: 'Reading',
-    primaryAction: 'Read sermon',
-  },
+  video: { icon: Video24Filled, label: 'Video', primaryAction: 'Watch sermon' },
+  audio: { icon: Headphones24Filled, label: 'Audio', primaryAction: 'Listen sermon' },
+  reading: { icon: BookOpen24Filled, label: 'Reading', primaryAction: 'Read sermon' },
 };
 
 export default function SermonDetailScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute<SermonDetailRoute>();
+  const colors = useFluentColors();
   const sermonId = route.params.sermonId;
 
   const { data: sermon, loading, error } = useFetch(
@@ -48,32 +58,31 @@ export default function SermonDetailScreen() {
     [sermonId],
   );
 
-  const {
-    bookmarkedIds,
-    downloadedIds,
-    toggleBookmark,
-    toggleDownload,
-  } = useLibraryStore();
+  const { bookmarkedIds, downloadedIds, toggleBookmark, toggleDownload } =
+    useLibraryStore();
+
+  const screenBg = { backgroundColor: colors.neutralBackground3 as string };
 
   if (loading) {
     return (
-      <View style={[styles.screen, styles.centered]}>
-        <ActivityIndicator color={Colors.accent} />
+      <View style={[styles.screen, styles.centered, screenBg]}>
+        <Spinner />
       </View>
     );
   }
 
   if (error || !sermon) {
     return (
-      <View style={[styles.screen, styles.centered]}>
-        <Text style={styles.errorText}>{error || 'Sermon not found.'}</Text>
-        <TouchableOpacity
+      <View style={[styles.screen, styles.centered, screenBg]}>
+        <Text variant="body1" color={colors.neutralForeground2 as string}>
+          {error || 'Sermon not found.'}
+        </Text>
+        <Button
+          label="Go back"
           onPress={() => navigation.goBack()}
-          style={styles.errorBtn}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.errorBtnText}>Go back</Text>
-        </TouchableOpacity>
+          variant="outlined"
+          fullWidth={false}
+        />
       </View>
     );
   }
@@ -81,38 +90,42 @@ export default function SermonDetailScreen() {
   const isBookmarked = bookmarkedIds.includes(sermon.id);
   const isDownloaded = downloadedIds.includes(sermon.id);
   const typeMeta = TYPE_META[sermon.contentType] || TYPE_META.audio;
+  const TypeIcon = typeMeta.icon;
   const dateLabel = new Date(sermon.publishedAt)
-    .toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
+    .toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     .toUpperCase();
 
+  const iconBtn = ({ pressed }: { pressed: boolean }) => [
+    styles.iconBtn,
+    {
+      backgroundColor: pressed
+        ? (colors.neutralBackground1Pressed as string)
+        : (colors.neutralBackground1 as string),
+    },
+  ];
+
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, screenBg]}>
       {/* ── Floating top bar ── */}
       <View style={[styles.topBar, { top: insets.top + 8 }]}>
-        <TouchableOpacity
+        <Pressable
           onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-          style={styles.iconBtn}
           hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          style={iconBtn}
         >
-          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
-        </TouchableOpacity>
-        <TouchableOpacity
+          <ChevronLeft24Regular color={colors.neutralForeground1 as string} />
+        </Pressable>
+        <Pressable
           onPress={() => {}}
-          activeOpacity={0.7}
-          style={styles.iconBtn}
           hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Share"
+          style={iconBtn}
         >
-          <Ionicons
-            name="share-outline"
-            size={20}
-            color={Colors.textPrimary}
-          />
-        </TouchableOpacity>
+          <ShareAndroid24Regular color={colors.neutralForeground1 as string} />
+        </Pressable>
       </View>
 
       <ScrollView
@@ -121,95 +134,89 @@ export default function SermonDetailScreen() {
       >
         {/* ── Hero ── */}
         <View style={styles.hero}>
-          <Image
-            source={{ uri: sermon.thumbnailUrl }}
-            style={styles.heroImage}
-          />
+          <Image source={{ uri: sermon.thumbnailUrl }} style={styles.heroImage} />
           <View style={styles.heroOverlay} />
-          <View style={styles.heroPlay}>
-            <Ionicons
-              name={typeMeta.icon}
-              size={28}
-              color={Colors.textInverse}
-            />
+          <View style={[styles.heroPlay, { backgroundColor: colors.brandBackground as string }]}>
+            <TypeIcon color={colors.neutralForegroundOnColor as string} />
           </View>
           <View style={styles.heroPills}>
             <View style={styles.heroPill}>
-              <Ionicons
-                name={typeMeta.icon}
-                size={11}
-                color={Colors.textInverse}
-              />
-              <Text style={styles.heroPillText}>{typeMeta.label}</Text>
+              <TypeIcon color="#FFFFFF" width={12} height={12} />
+              <Text variant="caption1Strong" color="#FFFFFF">
+                {typeMeta.label}
+              </Text>
             </View>
             <View style={styles.heroPill}>
-              <Ionicons
-                name="time-outline"
-                size={11}
-                color={Colors.textInverse}
-              />
-              <Text style={styles.heroPillText}>{sermon.duration}</Text>
+              <Clock16Regular color="#FFFFFF" width={12} height={12} />
+              <Text variant="caption1Strong" color="#FFFFFF">
+                {sermon.duration}
+              </Text>
             </View>
           </View>
         </View>
 
         {/* ── Content ── */}
         <View style={styles.content}>
-          <Text style={styles.dateEyebrow}>{dateLabel}</Text>
-          <Text style={styles.title}>{sermon.title}</Text>
+          <Text variant="caption1Strong" color={colors.brandForeground1 as string} style={styles.tracked}>
+            {dateLabel}
+          </Text>
+          <Text variant="title1">{sermon.title}</Text>
 
-          {/* Scripture pill */}
-          <View style={styles.scripturePill}>
-            <Ionicons name="leaf" size={11} color={Colors.accent} />
-            <Text style={styles.scriptureText}>{sermon.scripture}</Text>
+          <View style={[styles.scripturePill, { backgroundColor: FluentTint.subtle }]}>
+            <LeafTwo16Regular color={colors.brandForeground1 as string} width={12} height={12} />
+            <Text variant="caption1Strong" color={colors.brandForeground1 as string}>
+              {sermon.scripture}
+            </Text>
           </View>
 
           {/* Quick actions */}
           <View style={styles.quickActions}>
             <ActionTile
-              icon={isBookmarked ? 'bookmark' : 'bookmark-outline'}
+              icon={isBookmarked ? Bookmark24Filled : Bookmark24Regular}
               label={isBookmarked ? 'Saved' : 'Save'}
-              tint={isBookmarked ? 'brass' : 'neutral'}
+              active={isBookmarked}
               onPress={() => toggleBookmark(sermon.id)}
             />
             <ActionTile
-              icon={
-                isDownloaded
-                  ? 'checkmark-circle'
-                  : 'cloud-download-outline'
-              }
+              icon={isDownloaded ? CheckmarkCircle24Filled : ArrowDownload24Regular}
               label={isDownloaded ? 'Downloaded' : 'Download'}
-              tint={isDownloaded ? 'success' : 'neutral'}
+              active={isDownloaded}
               onPress={() => toggleDownload(sermon.id)}
             />
             <ActionTile
-              icon="share-social-outline"
+              icon={ShareAndroid24Regular}
               label="Share"
-              tint="neutral"
+              active={false}
               onPress={() => {}}
             />
           </View>
 
-          {/* Summary */}
           <View style={styles.section}>
-            <Text style={styles.sectionEyebrow}>SUMMARY</Text>
-            <Text style={styles.summary}>{sermon.summary}</Text>
+            <Text variant="caption1Strong" color={colors.brandForeground1 as string} style={styles.tracked}>
+              SUMMARY
+            </Text>
+            <Text variant="body1" color={colors.neutralForeground1 as string} style={styles.summary}>
+              {sermon.summary}
+            </Text>
           </View>
 
-          {/* Speaker */}
           <View style={styles.section}>
-            <Text style={styles.sectionEyebrow}>SPEAKER</Text>
-            <View style={styles.speakerCard}>
-              <View style={styles.speakerAvatar}>
-                <Text style={styles.speakerInitials}>EOB</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.speakerName}>
-                  Rev. Ing. Eric Ofori Broni
+            <Text variant="caption1Strong" color={colors.brandForeground1 as string} style={styles.tracked}>
+              SPEAKER
+            </Text>
+            <FluentCard appearance="filled" size="large" horizontal>
+              <View style={[styles.avatar, { backgroundColor: colors.brandBackground as string }]}>
+                <Text variant="body2Strong" color={colors.neutralForegroundOnColor as string}>
+                  EOB
                 </Text>
-                <Text style={styles.speakerTitle}>EBroni Global Media</Text>
               </View>
-            </View>
+              <View style={styles.flex}>
+                <Text variant="body1Strong">Rev. Ing. Eric Ofori Broni</Text>
+                <Text variant="caption1" color={colors.neutralForeground2 as string}>
+                  EBroni Global Media
+                </Text>
+              </View>
+            </FluentCard>
           </View>
         </View>
       </ScrollView>
@@ -218,318 +225,185 @@ export default function SermonDetailScreen() {
       <View
         style={[
           styles.bottomBar,
-          { paddingBottom: insets.bottom + Spacing.md },
+          {
+            paddingBottom: insets.bottom + FluentSpacing.m,
+            backgroundColor: colors.neutralBackground1 as string,
+            borderTopColor: colors.neutralStroke2 as string,
+          },
         ]}
       >
-        <TouchableOpacity style={styles.primaryButton} activeOpacity={0.85}>
-          <Ionicons
-            name={typeMeta.icon}
-            size={16}
-            color={Colors.textInverse}
-          />
-          <Text style={styles.primaryButtonText}>
-            {typeMeta.primaryAction}
-          </Text>
-        </TouchableOpacity>
+        <Button
+          label={typeMeta.primaryAction}
+          onPress={() => {}}
+          variant="primary"
+          size="lg"
+          icon={typeMeta.icon}
+        />
       </View>
     </View>
   );
 }
 
 function ActionTile({
-  icon,
+  icon: Icon,
   label,
-  tint,
+  active,
   onPress,
 }: {
-  icon: IoniconName;
+  icon: FluentIcon;
   label: string;
-  tint: 'brass' | 'success' | 'neutral';
+  active: boolean;
   onPress: () => void;
 }) {
-  const bg =
-    tint === 'brass'
-      ? 'rgba(184, 137, 62, 0.13)'
-      : tint === 'success'
-      ? Colors.successLight
-      : Colors.surfaceBlue;
-  const fg =
-    tint === 'brass'
-      ? Colors.accent
-      : tint === 'success'
-      ? Colors.success
-      : Colors.textSecondary;
-  const labelColor =
-    tint === 'brass'
-      ? Colors.accent
-      : tint === 'success'
-      ? Colors.success
-      : Colors.textPrimary;
+  const colors = useFluentColors();
   return (
-    <TouchableOpacity
-      style={styles.tile}
+    <Pressable
       onPress={onPress}
-      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: active }}
+      style={({ pressed }) => [
+        styles.tile,
+        {
+          backgroundColor: pressed
+            ? (colors.neutralBackground1Pressed as string)
+            : active
+              ? FluentTint.subtle
+              : (colors.neutralBackground1 as string),
+          borderColor: active
+            ? (colors.brandStroke1 as string)
+            : (colors.neutralStroke2 as string),
+        },
+      ]}
     >
-      <View style={[styles.tileIcon, { backgroundColor: bg }]}>
-        <Ionicons name={icon} size={18} color={fg} />
-      </View>
-      <Text style={[styles.tileLabel, { color: labelColor }]}>{label}</Text>
-    </TouchableOpacity>
+      <Icon
+        color={
+          active
+            ? (colors.brandForeground1 as string)
+            : (colors.neutralForeground2 as string)
+        }
+      />
+      <Text
+        variant="caption1Strong"
+        color={
+          active
+            ? (colors.brandForeground1 as string)
+            : (colors.neutralForeground2 as string)
+        }
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
+  screen: { flex: 1 },
+  flex: { flex: 1 },
+  tracked: { letterSpacing: 1.2 },
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
-    gap: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
-  },
-  errorText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-    textAlign: 'center',
-  },
-  errorBtn: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 12,
-    backgroundColor: Colors.primary,
-    borderRadius: BorderRadius.md,
-  },
-  errorBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.textInverse,
+    gap: FluentSpacing.l,
+    paddingHorizontal: FluentSpacing.l,
   },
 
-  // ── Top bar ──
   topBar: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    paddingHorizontal: Spacing.base,
+    left: FluentSpacing.l,
+    right: FluentSpacing.l,
+    zIndex: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    zIndex: 10,
   },
   iconBtn: {
     width: 40,
     height: 40,
-    borderRadius: BorderRadius.md,
+    borderRadius: FluentCorner.circular,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadows.sm,
   },
 
-  // ── Hero ──
-  hero: {
-    aspectRatio: 16 / 10,
-    backgroundColor: Colors.surfaceBlue,
-    overflow: 'hidden',
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-  },
+  hero: { height: 280, justifyContent: 'flex-end' },
+  heroImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(31, 36, 25, 0.32)',
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
   heroPlay: {
     position: 'absolute',
-    top: '50%',
-    left: '50%',
+    alignSelf: 'center',
+    top: '40%',
     width: 64,
     height: 64,
-    marginTop: -32,
-    marginLeft: -32,
-    borderRadius: 32,
-    backgroundColor: Colors.accent,
+    borderRadius: FluentCorner.circular,
     justifyContent: 'center',
     alignItems: 'center',
-    ...Shadows.md,
   },
   heroPills: {
-    position: 'absolute',
-    bottom: Spacing.base,
-    left: Spacing.base,
     flexDirection: 'row',
-    gap: 6,
+    gap: FluentSpacing.s,
+    padding: FluentSpacing.l,
   },
   heroPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: BorderRadius.full,
-    backgroundColor: 'rgba(31, 36, 25, 0.78)',
-  },
-  heroPillText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.textInverse,
-    letterSpacing: 0.3,
+    gap: FluentSpacing.xs,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: FluentSpacing.s,
+    paddingVertical: 3,
+    borderRadius: FluentCorner.circular,
   },
 
-  // ── Content ──
   content: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-  },
-  dateEyebrow: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: Colors.accent,
-    letterSpacing: 1.4,
-    marginBottom: 6,
-  },
-  title: {
-    fontFamily: 'serif',
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    letterSpacing: -0.5,
-    lineHeight: 34,
-    marginBottom: Spacing.md,
+    paddingHorizontal: FluentSpacing.l,
+    paddingTop: FluentSpacing.l,
+    gap: FluentSpacing.s,
   },
   scripturePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.surfaceBlue,
-    borderWidth: 1,
-    borderColor: 'rgba(184, 137, 62, 0.25)',
-    marginBottom: Spacing.lg,
-  },
-  scriptureText: {
-    fontFamily: 'serif',
-    fontStyle: 'italic',
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.accent,
+    gap: FluentSpacing.xs,
+    paddingHorizontal: FluentSpacing.m,
+    paddingVertical: FluentSpacing.xs,
+    borderRadius: FluentCorner.circular,
   },
 
-  // ── Quick actions ──
   quickActions: {
     flexDirection: 'row',
-    gap: Spacing.md,
-    marginBottom: Spacing.xl,
+    gap: FluentSpacing.m,
+    marginTop: FluentSpacing.m,
   },
   tile: {
     flex: 1,
-    paddingVertical: Spacing.base,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.md,
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: Colors.surface,
+    gap: FluentSpacing.xs,
+    paddingVertical: FluentSpacing.m,
+    borderRadius: FluentCorner.xLarge,
     borderWidth: 1,
-    borderColor: Colors.borderLight,
-    ...Shadows.sm,
   },
-  tileIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: BorderRadius.md,
+
+  section: { marginTop: FluentSpacing.xl, gap: FluentSpacing.s },
+  summary: { lineHeight: 24 },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: FluentCorner.circular,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  tileLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.1,
-  },
 
-  // ── Section ──
-  section: {
-    marginBottom: Spacing.xl,
-  },
-  sectionEyebrow: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.accent,
-    letterSpacing: 1.4,
-    marginBottom: Spacing.base,
-  },
-  summary: {
-    fontSize: 15,
-    fontWeight: '400',
-    color: Colors.textPrimary,
-    lineHeight: 25,
-  },
-  speakerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingVertical: Spacing.base,
-    paddingHorizontal: Spacing.base,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  speakerAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  speakerInitials: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.textInverse,
-    letterSpacing: 0.5,
-  },
-  speakerName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: 1,
-  },
-  speakerTitle: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-  },
-
-  // ── Bottom bar ──
   bottomBar: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    backgroundColor: Colors.surface,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: FluentSpacing.l,
+    paddingTop: FluentSpacing.m,
     borderTopWidth: 1,
-    borderTopColor: Colors.borderLight,
-  },
-  primaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.primary,
-    paddingVertical: 14,
-    borderRadius: BorderRadius.md,
-    ...Shadows.sm,
-  },
-  primaryButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.textInverse,
-    letterSpacing: 0.1,
+    // Without elevation the ScrollView paints over this bar on Android.
+    zIndex: 20,
+    elevation: 8,
   },
 });
